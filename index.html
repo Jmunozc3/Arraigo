@@ -1,0 +1,1190 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
+<title>Arraigo</title>
+<style>
+:root {
+  --sf: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", sans-serif;
+  --ios-blue:   #007AFF;
+  --ios-green:  #34C759;
+  --ios-orange: #FF9500;
+  --ios-red:    #FF3B30;
+  --ios-gray:   #8E8E93;
+  --ios-gray2:  #AEAEB2;
+  --ios-gray3:  #C7C7CC;
+  --ios-gray4:  #D1D1D6;
+  --ios-gray5:  #E5E5EA;
+  --ios-gray6:  #F2F2F7;
+  --bg:         #F2F2F7;
+  --cell-bg:    #FFFFFF;
+  --sep:        rgba(60,60,67,0.12);
+  --label:      #000000;
+  --label2:     rgba(60,60,67,0.60);
+  --label3:     rgba(60,60,67,0.30);
+  --blur-bg:    rgba(255,255,255,0.72);
+  --r-sm:  8px;  --r-md: 12px; --r-lg: 16px;
+  --r-xl:  20px; --r-2xl:28px;
+  --spring: cubic-bezier(0.34,1.56,0.64,1);
+  --ease:   cubic-bezier(0.4,0,0.2,1);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;overflow:hidden;background:#1c1c1e;}
+body{font-family:var(--sf);display:flex;align-items:center;justify-content:center;}
+button,input,select,textarea{font-family:var(--sf);outline:none;}
+
+/* DEVICE */
+.device{
+  width:390px;height:844px;position:relative;border-radius:54px;overflow:hidden;
+  background:var(--bg);
+  box-shadow:0 0 0 1px #3a3a3c,0 0 0 11px #1c1c1e,0 0 0 13px #3a3a3c,0 50px 120px rgba(0,0,0,0.8);
+}
+
+/* SCREENS */
+.screen{
+  position:absolute;inset:0;display:flex;flex-direction:column;
+  opacity:0;pointer-events:none;
+  background:var(--bg);overflow:hidden;
+}
+.screen.active{opacity:1;pointer-events:all;}
+
+.scroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;}
+.scroll::-webkit-scrollbar{display:none;}
+
+/* NAV BAR */
+.nav-bar{
+  height:56px;padding:0 16px;
+  display:flex;align-items:flex-end;padding-bottom:10px;
+  background:var(--blur-bg);
+  backdrop-filter:saturate(180%) blur(20px);
+  -webkit-backdrop-filter:saturate(180%) blur(20px);
+  border-bottom:0.5px solid var(--sep);
+  flex-shrink:0;position:relative;z-index:10;
+}
+.nav-bar.large{flex-direction:column;align-items:flex-start;padding-bottom:12px;height:auto;padding-top:56px;}
+.nav-title{font-size:17px;font-weight:600;letter-spacing:-0.4px;color:var(--label);flex:1;text-align:center;}
+.nav-title-large{font-size:34px;font-weight:700;letter-spacing:-0.5px;color:var(--label);padding:4px 0 0;}
+.nav-btn{
+  width:34px;height:34px;display:flex;align-items:center;justify-content:center;
+  background:none;border:none;cursor:pointer;color:var(--ios-blue);
+  font-size:17px;border-radius:50%;transition:opacity .15s;
+}
+.nav-btn:active{opacity:0.5;}
+.nav-spacer{width:34px;}
+.home-nav{justify-content:flex-end;}
+.home-brand{
+  position:absolute;left:50%;bottom:10px;transform:translateX(-50%);
+  display:grid;grid-template-columns:72px auto 72px;align-items:center;column-gap:12px;
+  pointer-events:none;
+}
+.home-brand-logo{
+  height:32px;width:auto;display:block;object-fit:contain;flex-shrink:0;
+}
+.home-brand-logo-left{justify-self:end;}
+.home-brand-logo-right{justify-self:start;}
+.home-brand-title{
+  font-size:18px;font-weight:700;letter-spacing:-0.5px;color:var(--ios-blue);
+  line-height:1;text-align:center;white-space:nowrap;
+}
+
+/* TAB BAR */
+.tab-bar{
+  height:83px;padding:10px 0 28px;display:flex;
+  background:var(--blur-bg);
+  backdrop-filter:saturate(180%) blur(20px);
+  -webkit-backdrop-filter:saturate(180%) blur(20px);
+  border-top:0.5px solid var(--sep);flex-shrink:0;position:relative;z-index:10;
+}
+.tab-item{
+  flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;
+  cursor:pointer;border:none;background:none;color:var(--ios-gray);transition:color .2s;
+}
+.tab-item.active{color:var(--ios-blue);}
+.tab-label{font-size:9px;font-weight:500;letter-spacing:-0.1px;}
+
+/* SEARCH BAR */
+.search-bar{
+  display:flex;align-items:center;gap:8px;
+  background:rgba(116,116,128,0.12);border-radius:10px;
+  padding:8px 12px;margin:0 16px 8px;
+}
+.search-bar input{flex:1;background:none;border:none;font-size:17px;color:var(--label);letter-spacing:-0.3px;}
+.search-bar input::placeholder{color:var(--ios-gray);}
+
+/* GROUPED TABLE */
+.group{margin:20px 16px 0;}
+.group-label{font-size:13px;font-weight:400;letter-spacing:-0.1px;color:var(--label2);text-transform:uppercase;padding:0 16px 6px;}
+.group-cells{background:var(--cell-bg);border-radius:var(--r-lg);overflow:hidden;}
+.cell{
+  display:flex;align-items:center;gap:14px;padding:13px 16px;min-height:50px;
+  cursor:pointer;position:relative;border-bottom:0.5px solid var(--sep);
+  transition:background .12s;
+}
+.cell:last-child{border-bottom:none;}
+.cell:active{background:rgba(0,0,0,0.05);}
+.cell-content{flex:1;min-width:0;}
+.cell-title{font-size:17px;letter-spacing:-0.4px;color:var(--label);}
+.cell-subtitle{font-size:13px;letter-spacing:-0.1px;color:var(--label2);margin-top:1px;}
+
+/* BUTTONS */
+.btn{
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  border:none;cursor:pointer;font-family:var(--sf);border-radius:14px;
+  font-size:17px;font-weight:600;letter-spacing:-0.3px;
+  transition:opacity .15s,transform .1s;
+}
+.btn:active{opacity:0.75;transform:scale(0.98);}
+.btn-filled{background:var(--ios-blue);color:#fff;}
+.btn-tinted{background:rgba(0,122,255,0.12);color:var(--ios-blue);}
+.btn-gray{background:rgba(116,116,128,0.12);color:var(--label);}
+.btn-red{background:rgba(255,59,48,0.12);color:var(--ios-red);}
+.btn-full{width:100%;}
+.btn-h50{height:50px;border-radius:14px;}
+.btn-h44{height:44px;border-radius:12px;}
+.btn-h36{height:36px;border-radius:10px;font-size:15px;}
+
+/* SEGMENT */
+.segment{
+  display:flex;background:rgba(116,116,128,0.12);
+  border-radius:9px;padding:2px;margin:0 16px 16px;
+}
+.seg-item{
+  flex:1;height:32px;border:none;cursor:pointer;border-radius:7px;background:none;
+  font-family:var(--sf);font-size:13px;font-weight:500;color:var(--label2);letter-spacing:-0.1px;
+  transition:all .2s;
+}
+.seg-item.active{background:var(--cell-bg);color:var(--label);box-shadow:0 1px 4px rgba(0,0,0,0.12);}
+
+/* CHIPS */
+.chip-scroll{display:flex;gap:8px;overflow-x:auto;padding:0 16px 12px;flex-shrink:0;}
+.chip-scroll::-webkit-scrollbar{display:none;}
+.chip{
+  display:inline-flex;align-items:center;height:32px;padding:0 14px;
+  border-radius:99px;font-size:14px;font-weight:500;letter-spacing:-0.2px;white-space:nowrap;
+  border:none;cursor:pointer;font-family:var(--sf);transition:all .15s;
+}
+.chip-active{background:var(--ios-blue);color:#fff;}
+.chip-inactive{background:rgba(116,116,128,0.12);color:var(--label);}
+
+/* INPUTS */
+.ios-input-group{margin:0 16px 16px;}
+.ios-input-group label{display:block;font-size:13px;color:var(--label2);margin-bottom:6px;padding-left:4px;}
+.ios-input{
+  width:100%;height:50px;background:var(--cell-bg);border:none;border-radius:var(--r-md);
+  padding:0 16px;font-size:17px;letter-spacing:-0.3px;color:var(--label);
+  box-shadow:0 0 0 0.5px var(--sep);transition:box-shadow .2s;
+}
+.ios-input:focus{box-shadow:0 0 0 2px var(--ios-blue);}
+.ios-input::placeholder{color:var(--ios-gray);}
+.ios-select{
+  width:100%;height:50px;background:var(--cell-bg);border:none;border-radius:var(--r-md);
+  padding:0 16px;font-size:17px;letter-spacing:-0.3px;color:var(--label);
+  box-shadow:0 0 0 0.5px var(--sep);-webkit-appearance:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='7'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23AEAEB2' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 14px center;
+}
+.ios-textarea{
+  min-height:118px;height:auto;padding:14px 16px;resize:vertical;line-height:1.5;
+}
+
+.info-card{
+  margin:0 16px 18px;padding:16px 18px;border-radius:18px;
+  background:rgba(255,149,0,0.12);border:1px solid rgba(255,149,0,0.18);
+}
+.info-card.complete{
+  background:rgba(52,199,89,0.12);border-color:rgba(52,199,89,0.2);
+}
+.info-card-title{font-size:16px;font-weight:700;letter-spacing:-0.3px;color:var(--label);}
+.info-card-copy{font-size:14px;color:var(--label2);line-height:1.55;letter-spacing:-0.15px;margin-top:6px;}
+
+/* TOGGLE */
+.toggle{
+  width:51px;height:31px;border-radius:99px;background:var(--ios-gray4);
+  border:none;cursor:pointer;position:relative;transition:background .25s;flex-shrink:0;
+}
+.toggle.on{background:var(--ios-green);}
+.toggle::after{
+  content:'';position:absolute;top:2px;left:2px;width:27px;height:27px;border-radius:50%;
+  background:#fff;box-shadow:0 2px 6px rgba(0,0,0,0.25);transition:transform .25s var(--spring);
+}
+.toggle.on::after{transform:translateX(20px);}
+
+/* BADGES */
+.badge{display:inline-flex;align-items:center;padding:3px 9px;border-radius:99px;font-size:12px;font-weight:600;letter-spacing:-0.1px;}
+.badge-blue-fill{background:var(--ios-blue);color:#fff;}
+.badge-red-fill{background:var(--ios-red);color:#fff;}
+.badge-green-fill{background:var(--ios-green);color:#fff;}
+
+/* PROGRESS */
+.progress-bar{height:4px;background:var(--ios-gray5);border-radius:99px;overflow:hidden;margin:0 16px 20px;}
+.progress-fill{height:100%;background:var(--ios-blue);border-radius:99px;transition:width .5s var(--ease);width:8%;}
+
+/* JOB CARD */
+.job-card{
+  background:var(--cell-bg);border-radius:var(--r-xl);overflow:hidden;
+  margin:0 16px 12px;box-shadow:0 1px 8px rgba(0,0,0,0.06);
+  cursor:pointer;transition:transform .15s,box-shadow .15s;
+}
+.job-card:active{transform:scale(0.98);box-shadow:0 1px 4px rgba(0,0,0,0.04);}
+.job-card-img{height:160px;overflow:hidden;position:relative;background:var(--bg);}
+.job-card-img img{width:100%;height:100%;object-fit:cover;transition:transform .4s;}
+.job-card:hover .job-card-img img{transform:scale(1.03);}
+.job-body{padding:14px 16px 16px;}
+.job-company{font-size:14px;font-weight:500;color:var(--ios-blue);letter-spacing:-0.2px;margin-bottom:4px;}
+.job-title-row{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;}
+.job-name{font-size:17px;font-weight:600;letter-spacing:-0.4px;color:var(--label);}
+.job-price{font-size:16px;font-weight:700;letter-spacing:-0.3px;color:var(--ios-green);}
+.job-meta-row{display:flex;align-items:center;gap:4px;font-size:14px;color:var(--label2);letter-spacing:-0.2px;margin-bottom:3px;}
+.badge-abs{position:absolute;top:12px;left:12px;}
+.save-btn{
+  position:absolute;top:10px;right:10px;width:34px;height:34px;border-radius:50%;
+  background:rgba(255,255,255,0.82);backdrop-filter:blur(8px);border:none;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;transition:background .15s;
+}
+.save-btn.saved{background:rgba(0,122,255,0.15);}
+
+/* SAVED CARD */
+.saved-card{
+  background:var(--cell-bg);border-radius:var(--r-xl);overflow:hidden;
+  margin:0 16px 12px;box-shadow:0 1px 8px rgba(0,0,0,0.06);display:flex;
+}
+.saved-card img{width:100px;height:100px;object-fit:cover;flex-shrink:0;}
+.saved-card-body{flex:1;padding:12px 14px;display:flex;flex-direction:column;justify-content:space-between;}
+.saved-actions{display:flex;gap:8px;flex-wrap:wrap;}
+.saved-note{font-size:12px;color:var(--label2);line-height:1.45;margin-top:8px;}
+
+.result-copy{padding:0 16px 12px;font-size:13px;color:var(--label2);letter-spacing:-0.1px;}
+.empty-state{
+  margin:16px;background:var(--cell-bg);border-radius:var(--r-xl);padding:28px 22px;
+  box-shadow:0 1px 8px rgba(0,0,0,0.06);text-align:center;
+}
+.empty-title{font-size:20px;font-weight:700;letter-spacing:-0.4px;color:var(--label);margin-bottom:8px;}
+.empty-copy{font-size:15px;color:var(--label2);line-height:1.55;}
+.map-status{
+  position:absolute;top:12px;left:12px;right:12px;z-index:20;
+  background:rgba(255,255,255,0.94);backdrop-filter:blur(14px);
+  border-radius:14px;padding:10px 12px;box-shadow:0 8px 24px rgba(0,0,0,0.08);
+  font-size:13px;color:var(--label2);letter-spacing:-0.1px;pointer-events:none;
+}
+
+.detail-overlay{
+  position:absolute;inset:0;z-index:99998;background:rgba(0,0,0,0.45);
+  backdrop-filter:blur(4px);display:none;align-items:flex-end;justify-content:center;
+}
+.detail-sheet{
+  width:100%;max-height:88%;background:var(--cell-bg);border-radius:28px 28px 0 0;
+  overflow:hidden;box-shadow:0 -8px 40px rgba(0,0,0,0.22);
+}
+.detail-grab{
+  width:36px;height:4px;background:var(--ios-gray4);border-radius:99px;
+  margin:12px auto 10px;
+}
+.detail-scroll{overflow-y:auto;max-height:calc(88vh - 20px);-webkit-overflow-scrolling:touch;}
+.detail-hero{position:relative;height:200px;background:#111;}
+.detail-hero img{width:100%;height:100%;object-fit:cover;display:block;}
+.detail-hero::after{
+  content:'';position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,0.72),rgba(0,0,0,0.08));
+}
+.detail-hero-copy{position:absolute;left:20px;right:20px;bottom:18px;z-index:1;}
+.detail-title{font-size:28px;font-weight:700;letter-spacing:-0.7px;line-height:1.12;color:#fff;}
+.detail-subtitle{font-size:14px;color:rgba(255,255,255,0.78);margin-top:6px;line-height:1.4;}
+.detail-scroll-body{padding:20px 20px 34px;}
+.detail-metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:20px;}
+.detail-metric{background:var(--bg);border-radius:16px;padding:12px 10px;}
+.detail-metric-value{font-size:16px;font-weight:700;color:var(--label);letter-spacing:-0.2px;}
+.detail-metric-label{font-size:12px;color:var(--label2);margin-top:4px;letter-spacing:-0.1px;}
+.detail-section{margin-bottom:18px;}
+.detail-section-title{font-size:15px;font-weight:700;color:var(--label);margin-bottom:8px;letter-spacing:-0.2px;}
+.detail-paragraph{font-size:14px;color:var(--label2);line-height:1.6;letter-spacing:-0.1px;}
+.detail-list{padding-left:18px;font-size:14px;color:var(--label2);line-height:1.65;}
+.detail-actions{display:flex;gap:10px;margin-top:22px;margin-bottom:18px;}
+.detail-facts{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:12px;}
+.detail-fact{background:var(--bg);border-radius:16px;padding:12px;}
+.detail-fact-label{font-size:12px;color:var(--label2);letter-spacing:-0.1px;}
+.detail-fact-value{font-size:14px;font-weight:600;color:var(--label);letter-spacing:-0.2px;line-height:1.45;margin-top:6px;}
+
+#job-detail-modal .detail-sheet{
+  width:calc(100% - 16px);max-height:82%;margin:0 8px 18px;border-radius:28px;
+}
+#job-detail-modal .detail-scroll{max-height:calc(82vh - 24px);}
+#job-detail-modal .detail-scroll-body{padding-bottom:60px;}
+#job-detail-modal .detail-hero{height:176px;}
+#job-detail-modal .detail-actions{
+  position:sticky;bottom:-1px;padding-top:16px;margin-top:28px;
+  background:linear-gradient(to top,var(--cell-bg) 82%,rgba(255,255,255,0.1));
+}
+#town-detail-modal .detail-scroll-body{padding-bottom:72px;}
+#town-detail-modal .detail-actions{margin-bottom:28px;}
+
+/* TOAST */
+.toast{
+  position:absolute;bottom:100px;left:50%;transform:translateX(-50%) translateY(16px);
+  background:rgba(40,40,40,0.92);backdrop-filter:blur(20px);color:#fff;
+  padding:12px 20px;border-radius:14px;font-size:15px;font-weight:500;letter-spacing:-0.2px;
+  box-shadow:0 8px 30px rgba(0,0,0,0.3);z-index:9998;white-space:nowrap;
+  opacity:0;transition:all .3s var(--spring);pointer-events:none;
+}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+/* TOWN CARD */
+.town-card{
+  position:absolute;bottom:12px;left:12px;right:12px;
+  background:rgba(255,255,255,0.92);backdrop-filter:saturate(180%) blur(20px);
+  border-radius:var(--r-xl);overflow:hidden;border:0.5px solid var(--sep);
+  box-shadow:0 8px 30px rgba(0,0,0,0.16);display:flex;z-index:10;
+}
+.town-card img{width:110px;height:110px;object-fit:cover;flex-shrink:0;}
+.town-body{flex:1;padding:14px 14px 14px 16px;display:flex;flex-direction:column;justify-content:space-between;}
+.town-card-stat{min-width:0;text-align:center;}
+.town-card-stat-value{font-size:15px;font-weight:700;letter-spacing:-0.2px;}
+.town-card-stat-label{font-size:10px;color:var(--label2);text-transform:uppercase;letter-spacing:0.04em;margin-top:1px;}
+
+/* PROFILE CARD */
+.profile-card{
+  margin:12px 16px;background:var(--cell-bg);border-radius:var(--r-2xl);
+  padding:20px;box-shadow:0 2px 12px rgba(0,0,0,0.06);
+}
+
+/* SECTION HEADER */
+.section-hdr{display:flex;align-items:center;justify-content:space-between;padding:20px 16px 10px;}
+.section-hdr-title{font-size:22px;font-weight:700;letter-spacing:-0.5px;}
+.section-hdr-link{font-size:16px;color:var(--ios-blue);background:none;border:none;cursor:pointer;text-decoration:none;}
+
+/* NEWS */
+.news-status{padding:0 16px 12px;font-size:13px;color:var(--label2);letter-spacing:-0.1px;}
+.news-status.error{color:var(--ios-red);}
+.news-featured{
+  display:block;width:calc(100% - 32px);margin:0 16px 12px;padding:0;text-align:left;
+  border:none;background:none;border-radius:var(--r-xl);overflow:hidden;
+  box-shadow:0 2px 12px rgba(0,0,0,0.08);cursor:pointer;
+}
+.news-kicker{font-size:12px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;color:var(--ios-blue);}
+.news-meta{font-size:12px;color:var(--label2);margin-top:4px;line-height:1.4;}
+.news-list-wrap{margin-top:0;margin-bottom:24px;}
+.news-cell{width:100%;background:none;border:none;text-align:left;}
+.notification-badge{
+  position:absolute;top:-4px;right:-4px;min-width:18px;height:18px;border-radius:99px;
+  background:var(--ios-red);color:#fff;font-size:11px;font-weight:700;display:none;
+  align-items:center;justify-content:center;padding:0 5px;box-shadow:0 1px 6px rgba(0,0,0,0.16);
+}
+.notifications-list{padding-bottom:10px;}
+
+/* ADMIN */
+.admin-card{
+  margin:0 16px 12px;background:var(--cell-bg);border-radius:var(--r-xl);
+  padding:16px;box-shadow:0 1px 8px rgba(0,0,0,0.06);
+}
+.admin-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin:0 16px 16px;}
+.admin-stat{background:var(--cell-bg);border-radius:18px;padding:16px;box-shadow:0 1px 8px rgba(0,0,0,0.06);}
+.admin-stat-label{font-size:12px;color:var(--label2);text-transform:uppercase;letter-spacing:0.04em;}
+.admin-stat-value{font-size:24px;font-weight:700;letter-spacing:-0.4px;color:var(--label);margin-top:6px;}
+.admin-map{height:220px;border-radius:18px;overflow:hidden;background:var(--bg);margin:0 16px 16px;box-shadow:0 1px 8px rgba(0,0,0,0.06);}
+.admin-list{padding-bottom:20px;}
+.admin-user-card{
+  margin:0 16px 12px;background:var(--cell-bg);border-radius:var(--r-xl);padding:16px;
+  box-shadow:0 1px 8px rgba(0,0,0,0.06);
+}
+.admin-toolbar{display:flex;gap:10px;margin:0 16px 16px;}
+.admin-history-list{display:flex;flex-direction:column;gap:8px;margin-top:14px;max-height:220px;overflow:auto;}
+.admin-history-item{background:var(--bg);border-radius:14px;padding:11px 12px;}
+.admin-history-title{font-size:13px;font-weight:600;color:var(--label);letter-spacing:-0.15px;}
+.admin-history-copy{font-size:12px;color:var(--label2);line-height:1.45;margin-top:4px;}
+
+/* COMMUNITIES */
+.community-card{
+  background:var(--cell-bg);border-radius:var(--r-xl);overflow:hidden;
+  margin:0 16px 12px;box-shadow:0 1px 8px rgba(0,0,0,0.06);
+}
+.community-cover{height:178px;background:var(--bg);}
+.community-cover img{width:100%;height:100%;object-fit:cover;display:block;}
+.community-card-body{padding:16px;}
+.community-title{font-size:18px;font-weight:700;letter-spacing:-0.4px;color:var(--label);}
+.community-subtitle{font-size:13px;color:var(--ios-blue);margin-top:4px;font-weight:600;line-height:1.4;}
+.community-description{font-size:14px;color:var(--label2);line-height:1.6;margin-top:12px;}
+.community-meta{font-size:12px;color:var(--label2);line-height:1.45;margin-top:12px;}
+.community-form-preview{
+  width:108px;height:108px;border-radius:22px;overflow:hidden;flex-shrink:0;
+  background:var(--bg);box-shadow:0 1px 8px rgba(0,0,0,0.06);
+}
+.community-form-preview img{width:100%;height:100%;object-fit:cover;display:block;}
+
+/* AVATAR */
+.avatar-edit-overlay{
+  position:absolute;bottom:0;right:0;width:26px;height:26px;
+  background:var(--ios-blue);border-radius:50%;border:2px solid #fff;
+  display:flex;align-items:center;justify-content:center;cursor:pointer;
+}
+
+/* AUTH ERROR */
+.auth-error{
+  background:rgba(255,59,48,0.1);border-radius:10px;padding:10px 14px;
+  margin:0 16px 14px;font-size:14px;color:var(--ios-red);display:none;
+}
+
+.modal-overlay{
+  position:absolute;inset:0;z-index:99999;padding:24px;
+  background:rgba(0,0,0,0.45);backdrop-filter:blur(4px);
+  display:none;align-items:center;justify-content:center;
+}
+.modal-card{
+  width:100%;max-width:320px;background:var(--cell-bg);border-radius:24px;
+  padding:22px 20px 20px;box-shadow:0 20px 50px rgba(0,0,0,0.2);
+}
+.modal-badge{
+  width:52px;height:52px;border-radius:16px;margin-bottom:16px;
+  background:rgba(255,149,0,0.12);display:flex;align-items:center;justify-content:center;
+}
+.modal-title{font-size:22px;font-weight:700;letter-spacing:-0.5px;color:var(--label);margin-bottom:8px;}
+.modal-copy{font-size:15px;color:var(--label2);line-height:1.55;letter-spacing:-0.2px;margin-bottom:18px;}
+
+@keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+.fu{animation:fadeUp .4s var(--ease) both;}
+.fu1{animation-delay:.06s;}.fu2{animation-delay:.12s;}.fu3{animation-delay:.18s;}
+.fu4{animation-delay:.24s;}.fu5{animation-delay:.30s;}.fu6{animation-delay:.36s;}
+@keyframes slideUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+</style>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+</head>
+<body>
+<div class="device">
+<div class="toast" id="toast"></div>
+
+<!-- ══════ SPLASH ══════ -->
+<div class="screen active" id="s-splash" style="background:#000;justify-content:flex-end;">
+  <div style="position:absolute;inset:0;overflow:hidden;">
+    <img src="https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=800&q=90" style="width:100%;height:100%;object-fit:cover;opacity:0.55;filter:saturate(1.1);" alt=""/>
+    <div style="position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,0.9) 0%,rgba(0,0,0,0.05) 55%,transparent);"></div>
+  </div>
+  <div style="position:absolute;top:60px;left:24px;z-index:2;display:flex;align-items:center;gap:10px;">
+    <div style="width:44px;height:44px;background:rgba(255,255,255,0.15);border-radius:12px;border:1px solid rgba(255,255,255,0.25);backdrop-filter:blur(12px);display:flex;align-items:center;justify-content:center;">
+      <svg viewBox="0 0 24 24" width="24" height="24" fill="none"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z" fill="rgba(255,255,255,0.9)"/><path d="M8 12l3 3 5-5" stroke="#007AFF" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </div>
+    <span style="font-size:28px;font-weight:700;color:#fff;letter-spacing:-0.5px;">Arraigo</span>
+  </div>
+  <div style="position:relative;z-index:2;padding:0 24px 48px;" class="fu">
+    <div style="font-size:40px;font-weight:700;color:#fff;letter-spacing:-1px;line-height:1.1;margin-bottom:14px;">Tu nueva vida<br/>en la España<br/><span style="color:#30D158;">rural</span></div>
+    <div style="font-size:17px;color:rgba(255,255,255,0.65);letter-spacing:-0.3px;line-height:1.5;margin-bottom:36px;">Encuentra trabajo, vivienda y comunidad en los municipios que más te necesitan.</div>
+    <button class="btn btn-filled btn-full btn-h50 fu fu1" onclick="go('s-onboard')">Comenzar</button>
+    <button class="btn btn-full btn-h50 fu fu2" style="background:rgba(255,255,255,0.12);color:#fff;margin-top:10px;backdrop-filter:blur(8px);" onclick="go('s-login')">Ya tengo cuenta</button>
+  </div>
+</div>
+
+<!-- ══════ LOGIN ══════ -->
+<div class="screen" id="s-login">
+  <div class="nav-bar" style="padding-top:64px;">
+    <button class="nav-btn" onclick="go('s-splash')"><svg viewBox="0 0 24 24" width="20" height="20" fill="none"><path d="M15 18l-6-6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+    <span class="nav-title">Iniciar sesión</span>
+    <div class="nav-spacer"></div>
+  </div>
+  <div class="scroll">
+    <div style="padding-top:24px;">
+      <div style="text-align:center;padding:0 24px 28px;" class="fu">
+        <div style="width:72px;height:72px;background:rgba(0,122,255,0.1);border-radius:22px;margin:0 auto 16px;display:flex;align-items:center;justify-content:center;">
+          <svg viewBox="0 0 24 24" width="36" height="36" fill="none"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" stroke="#007AFF" stroke-width="1.5" stroke-linecap="round"/><circle cx="12" cy="7" r="4" stroke="#007AFF" stroke-width="1.5"/></svg>
+        </div>
+        <div style="font-size:28px;font-weight:700;letter-spacing:-0.6px;color:var(--label);margin-bottom:6px;">Bienvenido</div>
+        <div style="font-size:16px;color:var(--label2);letter-spacing:-0.2px;">Accede a tu cuenta de Arraigo</div>
+      </div>
+      <div class="auth-error" id="login-error">Usuario o contraseña incorrectos.</div>
+      <div class="ios-input-group fu fu1">
+        <label>Correo electrónico</label>
+        <input class="ios-input" type="email" id="login-email" placeholder="ejemplo@correo.com"/>
+      </div>
+      <div class="ios-input-group fu fu2">
+        <label>Contraseña</label>
+        <input class="ios-input" type="password" id="login-pass" placeholder="Tu contraseña"/>
+      </div>
+      <div style="padding:4px 16px 20px;text-align:right;" class="fu fu2">
+        <a href="#" style="color:var(--ios-blue);font-size:15px;" onclick="requestPasswordRecovery();return false;">¿Olvidaste tu contraseña?</a>
+      </div>
+      <div style="margin:0 16px 16px;background:rgba(0,122,255,0.06);border-radius:14px;padding:12px 14px;font-size:13px;color:var(--label2);line-height:1.5;" class="fu fu2">
+        Usuario admin de pruebas: <strong style="color:var(--label);">admin@arraigo.test</strong><br/>
+        Contraseña: <strong style="color:var(--label);">ArraigoAdmin2026!</strong>
+      </div>
+      <div style="padding:0 16px 12px;" class="fu fu3">
+        <button class="btn btn-filled btn-full btn-h50" onclick="doLogin()">Iniciar sesión</button>
+      </div>
+      <div style="text-align:center;padding:0 16px 40px;font-size:15px;color:var(--label2);" class="fu fu4">
+        ¿No tienes cuenta? <a href="#" style="color:var(--ios-blue);" onclick="go('s-onboard');return false;">Crear cuenta</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════ LANGUAGE ══════ -->
+<div class="screen" id="s-onboard">
+  <div class="nav-bar" style="padding-top:64px;">
+    <button class="nav-btn" onclick="go('s-splash')"><svg viewBox="0 0 24 24" width="20" height="20" fill="none"><path d="M15 18l-6-6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+    <span class="nav-title">Idioma</span>
+    <div class="nav-spacer"></div>
+  </div>
+  <div class="scroll" style="padding-top:12px;">
+    <div style="text-align:center;padding:24px 24px 0;" class="fu">
+      <div style="width:72px;height:72px;background:rgba(0,122,255,0.1);border-radius:22px;margin:0 auto 16px;display:flex;align-items:center;justify-content:center;">
+        <svg viewBox="0 0 24 24" width="36" height="36" fill="none"><circle cx="12" cy="12" r="9" stroke="#007AFF" stroke-width="1.5"/><path d="M12 3c0 0-4 4-4 9s4 9 4 9" stroke="#007AFF" stroke-width="1.5" stroke-linecap="round"/><path d="M12 3c0 0 4 4 4 9s-4 9-4 9" stroke="#007AFF" stroke-width="1.5" stroke-linecap="round"/><path d="M3 12h18" stroke="#007AFF" stroke-width="1.5"/></svg>
+      </div>
+      <div style="font-size:28px;font-weight:700;letter-spacing:-0.6px;color:var(--label);margin-bottom:8px;">Elige tu idioma</div>
+      <div style="font-size:16px;color:var(--label2);line-height:1.5;letter-spacing:-0.2px;">Selecciona el idioma con el que te sientas más cómodo.</div>
+    </div>
+    <div class="group fu fu1">
+      <div class="group-cells">
+        <div class="cell" id="lc-es" onclick="selLang('es')" style="background:rgba(0,122,255,0.05);">
+          <div style="font-size:28px;width:38px;text-align:center;">🇪🇸</div>
+          <div class="cell-content"><div class="cell-title" style="font-weight:600;">Español</div><div class="cell-subtitle">Spanish</div></div>
+          <svg id="lk-es" viewBox="0 0 24 24" width="22" height="22"><circle cx="12" cy="12" r="10" fill="#007AFF"/><path d="M7.5 12l3 3 6-6" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
+        </div>
+        <div class="cell" id="lc-en" onclick="selLang('en')">
+          <div style="font-size:28px;width:38px;text-align:center;">🇺🇸</div>
+          <div class="cell-content"><div class="cell-title">English</div><div class="cell-subtitle">English</div></div>
+          <svg id="lk-en" viewBox="0 0 24 24" width="22" height="22" style="display:none;"><circle cx="12" cy="12" r="10" fill="#007AFF"/><path d="M7.5 12l3 3 6-6" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
+          <svg id="lr-en" viewBox="0 0 24 24" width="22" height="22" fill="none"><circle cx="12" cy="12" r="9.5" stroke="#C7C7CC" stroke-width="1.5"/></svg>
+        </div>
+        <div class="cell" id="lc-fr" onclick="selLang('fr')">
+          <div style="font-size:28px;width:38px;text-align:center;">🇫🇷</div>
+          <div class="cell-content"><div class="cell-title">Français</div><div class="cell-subtitle">French</div></div>
+          <svg id="lk-fr" viewBox="0 0 24 24" width="22" height="22" style="display:none;"><circle cx="12" cy="12" r="10" fill="#007AFF"/><path d="M7.5 12l3 3 6-6" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
+          <svg id="lr-fr" viewBox="0 0 24 24" width="22" height="22" fill="none"><circle cx="12" cy="12" r="9.5" stroke="#C7C7CC" stroke-width="1.5"/></svg>
+        </div>
+        <div class="cell" id="lc-de" onclick="selLang('de')">
+          <div style="font-size:28px;width:38px;text-align:center;">🇩🇪</div>
+          <div class="cell-content"><div class="cell-title">Deutsch</div><div class="cell-subtitle">German</div></div>
+          <svg id="lk-de" viewBox="0 0 24 24" width="22" height="22" style="display:none;"><circle cx="12" cy="12" r="10" fill="#007AFF"/><path d="M7.5 12l3 3 6-6" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
+          <svg id="lr-de" viewBox="0 0 24 24" width="22" height="22" fill="none"><circle cx="12" cy="12" r="9.5" stroke="#C7C7CC" stroke-width="1.5"/></svg>
+        </div>
+        <div class="cell" id="lc-it" onclick="selLang('it')">
+          <div style="font-size:28px;width:38px;text-align:center;">🇮🇹</div>
+          <div class="cell-content"><div class="cell-title">Italiano</div><div class="cell-subtitle">Italian</div></div>
+          <svg id="lk-it" viewBox="0 0 24 24" width="22" height="22" style="display:none;"><circle cx="12" cy="12" r="10" fill="#007AFF"/><path d="M7.5 12l3 3 6-6" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
+          <svg id="lr-it" viewBox="0 0 24 24" width="22" height="22" fill="none"><circle cx="12" cy="12" r="9.5" stroke="#C7C7CC" stroke-width="1.5"/></svg>
+        </div>
+        <div class="cell" id="lc-ary" onclick="selLang('ary')">
+          <div style="font-size:28px;width:38px;text-align:center;">🇲🇦</div>
+          <div class="cell-content"><div class="cell-title">Darija</div><div class="cell-subtitle">Marroquí</div></div>
+          <svg id="lk-ary" viewBox="0 0 24 24" width="22" height="22" style="display:none;"><circle cx="12" cy="12" r="10" fill="#007AFF"/><path d="M7.5 12l3 3 6-6" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
+          <svg id="lr-ary" viewBox="0 0 24 24" width="22" height="22" fill="none"><circle cx="12" cy="12" r="9.5" stroke="#C7C7CC" stroke-width="1.5"/></svg>
+        </div>
+        <div class="cell" id="lc-zh" onclick="selLang('zh')">
+          <div style="font-size:28px;width:38px;text-align:center;">🇨🇳</div>
+          <div class="cell-content"><div class="cell-title">中文</div><div class="cell-subtitle">Chino</div></div>
+          <svg id="lk-zh" viewBox="0 0 24 24" width="22" height="22" style="display:none;"><circle cx="12" cy="12" r="10" fill="#007AFF"/><path d="M7.5 12l3 3 6-6" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
+          <svg id="lr-zh" viewBox="0 0 24 24" width="22" height="22" fill="none"><circle cx="12" cy="12" r="9.5" stroke="#C7C7CC" stroke-width="1.5"/></svg>
+        </div>
+        <div class="cell" id="lc-ar" onclick="selLang('ar')">
+          <div style="font-size:28px;width:38px;text-align:center;">🇸🇦</div>
+          <div class="cell-content"><div class="cell-title">العربية</div><div class="cell-subtitle">Árabe</div></div>
+          <svg id="lk-ar" viewBox="0 0 24 24" width="22" height="22" style="display:none;"><circle cx="12" cy="12" r="10" fill="#007AFF"/><path d="M7.5 12l3 3 6-6" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
+          <svg id="lr-ar" viewBox="0 0 24 24" width="22" height="22" fill="none"><circle cx="12" cy="12" r="9.5" stroke="#C7C7CC" stroke-width="1.5"/></svg>
+        </div>
+        <div class="cell" id="lc-ro" onclick="selLang('ro')">
+          <div style="font-size:28px;width:38px;text-align:center;">🇷🇴</div>
+          <div class="cell-content"><div class="cell-title">Română</div><div class="cell-subtitle">Rumano</div></div>
+          <svg id="lk-ro" viewBox="0 0 24 24" width="22" height="22" style="display:none;"><circle cx="12" cy="12" r="10" fill="#007AFF"/><path d="M7.5 12l3 3 6-6" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
+          <svg id="lr-ro" viewBox="0 0 24 24" width="22" height="22" fill="none"><circle cx="12" cy="12" r="9.5" stroke="#C7C7CC" stroke-width="1.5"/></svg>
+        </div>
+      </div>
+    </div>
+    <div style="padding:16px 16px 40px;">
+      <button class="btn btn-filled btn-full btn-h50 fu fu3" onclick="openRegisterScreen()">Continuar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════ REGISTER ══════ -->
+<div class="screen" id="s-register">
+  <div class="nav-bar" style="padding-top:64px;">
+    <button class="nav-btn" onclick="go('s-onboard')"><svg viewBox="0 0 24 24" width="20" height="20" fill="none"><path d="M15 18l-6-6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+    <span class="nav-title">Crear cuenta</span>
+    <div class="nav-spacer"></div>
+  </div>
+  <div class="scroll">
+    <div style="padding:16px 0 0;">
+      <div class="progress-bar"><div class="progress-fill" id="reg-bar"></div></div>
+      <div style="padding:0 16px 20px;" class="fu">
+        <div style="font-size:28px;font-weight:700;letter-spacing:-0.6px;color:var(--label);line-height:1.2;">Cuéntanos<br/>sobre ti</div>
+        <div style="font-size:15px;color:var(--label2);margin-top:6px;letter-spacing:-0.2px;">Crea tu perfil para empezar tu arraigo.</div>
+        <button class="btn btn-gray btn-h36" style="margin-top:14px;padding:0 14px;font-size:14px;" onclick="openExperimentNotice()">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8"/><path d="M12 10v5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="12" cy="7" r="1.1" fill="currentColor"/></svg>
+          Aviso del proyecto
+        </button>
+      </div>
+      <div class="auth-error" id="reg-error"></div>
+      <div class="ios-input-group fu fu1"><label>Nombre completo</label><input class="ios-input" type="text" id="reg-name" placeholder="Juan Pérez" oninput="calcProg()"/></div>
+      <div class="ios-input-group fu fu1"><label>Correo electrónico</label><input class="ios-input" type="email" id="reg-email" placeholder="ejemplo@correo.com" oninput="calcProg()"/></div>
+      <div class="ios-input-group fu fu2"><label>Contraseña</label><input class="ios-input" type="password" id="reg-pass" placeholder="Mínimo 6 caracteres" oninput="calcProg()"/></div>
+      <div style="display:flex;gap:10px;margin:0 16px 16px;" class="fu fu2">
+        <div style="flex:1;"><label style="display:block;font-size:13px;color:var(--label2);margin-bottom:6px;padding-left:4px;">Edad</label><input class="ios-input" type="number" id="reg-age" placeholder="25" style="width:100%;" oninput="calcProg()"/></div>
+        <div style="flex:2;"><label style="display:block;font-size:13px;color:var(--label2);margin-bottom:6px;padding-left:4px;">Municipio</label><input class="ios-input" type="text" id="reg-town" placeholder="Tu localidad" style="width:100%;" oninput="calcProg()"/></div>
+      </div>
+      <div class="ios-input-group fu fu2"><label>Teléfono</label>
+        <div style="display:flex;gap:8px;">
+          <select class="ios-select" style="width:90px;"><option>+34</option><option>+1</option><option>+54</option><option>+57</option></select>
+          <input class="ios-input" type="tel" id="reg-phone" placeholder="600 000 000" style="flex:1;" oninput="calcProg()"/>
+        </div>
+      </div>
+      <div class="ios-input-group fu fu3"><label>Situación laboral</label>
+        <select class="ios-select ios-input" id="reg-status" onchange="calcProg()"><option value="" disabled selected>Selecciona</option><option value="unemployed">Desempleado/a</option><option value="seeking">Buscando empleo</option><option value="employed">Trabajando</option><option value="self_employed">Autónomo/a</option><option value="student">Estudiante</option></select>
+      </div>
+      <div class="ios-input-group fu fu3"><label>País de origen</label><input class="ios-input" type="text" id="reg-country" placeholder="Colombia, Marruecos..." oninput="calcProg()"/></div>
+      <div class="ios-input-group fu fu4"><label>Comunidad autónoma de interés</label>
+        <select class="ios-select ios-input" id="reg-region" onchange="calcProg()"><option value="" disabled selected>Selecciona</option><option value="andalucia">Andalucía</option><option value="aragon">Aragón</option><option value="asturias">Asturias</option><option value="canarias">Canarias</option><option value="cantabria">Cantabria</option><option value="castilla_y_leon">Castilla y León</option><option value="castilla_la_mancha">Castilla-La Mancha</option><option value="cataluna">Cataluña</option><option value="comunidad_valenciana">Comunidad Valenciana</option><option value="extremadura">Extremadura</option><option value="galicia">Galicia</option><option value="madrid">Madrid</option><option value="murcia">Murcia</option><option value="navarra">Navarra</option><option value="pais_vasco">País Vasco</option></select>
+      </div>
+      <div class="group fu fu4" style="margin-bottom:0;">
+        <div class="group-cells">
+          <div class="cell" onclick="var t=document.getElementById('reg-track-toggle');t.classList.toggle('on')">
+            <div class="cell-content">
+              <div class="cell-title" id="reg-track-title" style="font-size:15px;">Compartir ubicación para análisis</div>
+              <div class="cell-subtitle" id="reg-track-copy">Puedes decidir si quieres activar el seguimiento al crear tu cuenta. <a href="#" style="color:var(--ios-blue);text-decoration:none;" onclick="event.stopPropagation();openTrackingInfoNotice();return false;">Más información</a></div>
+            </div>
+            <button class="toggle on" id="reg-track-toggle" onclick="event.stopPropagation();this.classList.toggle('on')"></button>
+          </div>
+          <div class="cell" onclick="var t=document.getElementById('tog');t.classList.toggle('on');calcProg()">
+            <div class="cell-content">
+              <div class="cell-title" style="font-size:15px;">Términos y privacidad</div>
+              <div class="cell-subtitle">Acepto los términos de Arraigo · <a href="#" style="color:var(--ios-blue);text-decoration:none;" onclick="event.stopPropagation();openPrivacy();return false;">Leer política</a></div>
+            </div>
+            <button class="toggle" id="tog" onclick="event.stopPropagation();this.classList.toggle('on');calcProg()"></button>
+          </div>
+        </div>
+      </div>
+      <div style="padding:20px 16px 40px;" class="fu fu5">
+        <button class="btn btn-filled btn-full btn-h50" onclick="doReg()">Crear mi cuenta</button>
+        <div style="text-align:center;margin-top:14px;font-size:15px;color:var(--label2);">¿Ya tienes cuenta? <a href="#" style="color:var(--ios-blue);" onclick="go('s-login');return false;">Iniciar sesión</a></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════ HOME ══════ -->
+<div class="screen" id="s-home">
+  <div class="nav-bar home-nav" style="padding-top:64px;">
+    <div class="home-brand" aria-label="Arraigo Comunidad de Madrid">
+      <img class="home-brand-logo home-brand-logo-left" src="Logo_Proyecto_Arraigo copia.png" alt="Logo de Arraigo"/>
+      <span class="home-brand-title">Arraigo</span>
+      <img class="home-brand-logo home-brand-logo-right" src="Logotipo_del_Gobierno_de_la_Comunidad_de_Madrid.svg.png" alt="Logo de la Comunidad de Madrid"/>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <button style="width:34px;height:34px;border-radius:50%;background:rgba(116,116,128,0.12);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;position:relative;" onclick="openNotifications()">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" style="color:var(--label);"><path d="M12 22c1.1 0 2-.9 2-2H10c0 1.1.9 2 2 2z"/><path d="M18 16V11c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></svg>
+        <span class="notification-badge" id="home-notification-badge">0</span>
+      </button>
+    </div>
+  </div>
+  <div class="scroll">
+    <div class="profile-card">
+      <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px;">
+        <div style="width:68px;height:68px;border-radius:50%;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,0.15);flex-shrink:0;position:relative;">
+          <img id="home-avatar" src="https://i.pravatar.cc/136?img=3" style="width:100%;height:100%;object-fit:cover;" alt=""/>
+        </div>
+        <div style="flex:1;">
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+            <div id="home-name" style="font-size:20px;font-weight:700;letter-spacing:-0.4px;">Juan Pérez</div>
+            <span id="home-role-badge" class="badge badge-green-fill" style="display:none;">Sesión activa</span>
+          </div>
+          <div id="home-meta" style="font-size:14px;color:var(--label2);margin-top:2px;letter-spacing:-0.2px;">28 años · Buscando empleo rural</div>
+          <div style="display:flex;align-items:center;gap:5px;margin-top:5px;"><div style="width:7px;height:7px;border-radius:50%;background:var(--ios-green);"></div><span style="font-size:13px;color:var(--label2);">Perfil activo</span></div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <button class="btn btn-gray btn-h36" style="font-size:13px;padding:0 14px;" onclick="openEditProfile()">Editar</button>
+          <button id="home-admin-btn" class="btn btn-tinted btn-h36" style="display:none;font-size:12px;padding:0 12px;" onclick="openAdminScreen()">Panel admin</button>
+        </div>
+      </div>
+    </div>
+    <div class="section-hdr"><span class="section-hdr-title">Accesos rápidos</span></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:0 16px;">
+      <button onclick="switchTo('s-jobs')" style="background:var(--cell-bg);border:none;border-radius:var(--r-lg);padding:16px;text-align:left;cursor:pointer;box-shadow:0 1px 6px rgba(0,0,0,0.06);">
+        <div style="width:40px;height:40px;background:rgba(0,122,255,0.12);border-radius:12px;display:flex;align-items:center;justify-content:center;margin-bottom:10px;"><svg viewBox="0 0 24 24" width="22" height="22" fill="none"><rect x="2" y="7" width="20" height="15" rx="2" stroke="#007AFF" stroke-width="1.7"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2" stroke="#007AFF" stroke-width="1.7"/></svg></div>
+        <div style="font-size:15px;font-weight:600;letter-spacing:-0.3px;">Trabajos</div>
+        <div style="font-size:13px;color:var(--label2);margin-top:2px;">Explorar ofertas</div>
+      </button>
+      <button onclick="switchTo('s-towns')" style="background:var(--cell-bg);border:none;border-radius:var(--r-lg);padding:16px;text-align:left;cursor:pointer;box-shadow:0 1px 6px rgba(0,0,0,0.06);">
+        <div style="width:40px;height:40px;background:rgba(52,199,89,0.12);border-radius:12px;display:flex;align-items:center;justify-content:center;margin-bottom:10px;"><svg viewBox="0 0 24 24" width="22" height="22" fill="none"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z" stroke="#34C759" stroke-width="1.7"/><circle cx="12" cy="10" r="3" stroke="#34C759" stroke-width="1.7"/></svg></div>
+        <div style="font-size:15px;font-weight:600;letter-spacing:-0.3px;">Pueblos</div>
+        <div style="font-size:13px;color:var(--label2);margin-top:2px;">Mapa municipal</div>
+      </button>
+      <button onclick="openSepeWebsite()" style="background:var(--cell-bg);border:none;border-radius:var(--r-lg);padding:16px;text-align:left;cursor:pointer;box-shadow:0 1px 6px rgba(0,0,0,0.06);">
+        <div style="width:40px;height:40px;background:rgba(255,149,0,0.12);border-radius:12px;display:flex;align-items:center;justify-content:center;margin-bottom:10px;"><svg viewBox="0 0 24 24" width="22" height="22" fill="none"><rect x="3" y="3" width="18" height="18" rx="3" stroke="#FF9500" stroke-width="1.7"/><path d="M7 8h10M7 12h6M7 16h8" stroke="#FF9500" stroke-width="1.7" stroke-linecap="round"/></svg></div>
+        <div style="font-size:15px;font-weight:600;letter-spacing:-0.3px;">SEPE</div>
+        <div style="font-size:13px;color:var(--label2);margin-top:2px;">Web oficial</div>
+      </button>
+      <button onclick="openSavedScreen()" style="background:var(--cell-bg);border:none;border-radius:var(--r-lg);padding:16px;text-align:left;cursor:pointer;box-shadow:0 1px 6px rgba(0,0,0,0.06);">
+        <div style="width:40px;height:40px;background:rgba(88,86,214,0.12);border-radius:12px;display:flex;align-items:center;justify-content:center;margin-bottom:10px;"><svg viewBox="0 0 24 24" width="22" height="22" fill="none"><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z" stroke="#5856D6" stroke-width="1.7"/></svg></div>
+        <div style="font-size:15px;font-weight:600;letter-spacing:-0.3px;">Guardados</div>
+        <div id="home-saved-copy" style="font-size:13px;color:var(--label2);margin-top:2px;">Tus favoritos</div>
+      </button>
+    </div>
+    <div class="section-hdr"><span class="section-hdr-title">Noticias</span><a class="section-hdr-link" href="#" onclick="refreshHomeNews();return false;">Actualizar</a></div>
+    <div id="home-news-status" class="news-status">Cargando noticias de empleabilidad rural, pueblos y ayudas...</div>
+    <div id="home-news-featured"></div>
+    <div class="group news-list-wrap" id="home-news-list-wrap">
+      <div class="group-cells" id="home-news-list"></div>
+    </div>
+  </div>
+  <div class="tab-bar">
+    <button class="tab-item active" onclick="switchTo('s-home')"><div style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;"><svg viewBox="0 0 24 24" width="26" height="26" fill="currentColor" fill-opacity="0.2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" stroke="currentColor" stroke-width="1.8" fill="currentColor" fill-opacity="0.15"/><polyline points="9 22 9 12 15 12 15 22" stroke="currentColor" stroke-width="1.8" fill="none"/></svg></div><span class="tab-label">Inicio</span></button>
+    <button class="tab-item" onclick="switchTo('s-jobs')"><div style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;"><svg viewBox="0 0 24 24" width="26" height="26" fill="none"><rect x="2" y="7" width="20" height="15" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2" stroke="currentColor" stroke-width="1.8"/></svg></div><span class="tab-label">Empleo</span></button>
+    <button class="tab-item" onclick="switchTo('s-towns')"><div style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;"><svg viewBox="0 0 24 24" width="26" height="26" fill="none"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="10" r="3" stroke="currentColor" stroke-width="1.8"/></svg></div><span class="tab-label">Pueblos</span></button>
+    <button class="tab-item" onclick="switchTo('s-communities')"><div style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;"><svg viewBox="0 0 24 24" width="25" height="25" fill="none"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="9" cy="7" r="4" stroke="currentColor" stroke-width="1.8"/><path d="M22 21v-2a4 4 0 00-3-3.87" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M16 3.13a4 4 0 010 7.75" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></div><span class="tab-label">Comunidades</span></button>
+    <button class="tab-item" onclick="switchTo('s-saved')"><div style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;"><svg viewBox="0 0 24 24" width="26" height="26" fill="none"><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z" stroke="currentColor" stroke-width="1.8"/></svg></div><span class="tab-label">Guardados</span></button>
+  </div>
+</div>
+
+<!-- ══════ EDIT PROFILE ══════ -->
+<div class="screen" id="s-editprofile">
+  <div class="nav-bar" style="padding-top:64px;">
+    <button class="nav-btn" onclick="go('s-home')" style="color:var(--ios-red);">Cancelar</button>
+    <span class="nav-title">Editar perfil</span>
+    <button class="nav-btn" onclick="saveProfile()" style="font-weight:700;">Guardar</button>
+  </div>
+  <div class="scroll">
+    <div style="display:flex;flex-direction:column;align-items:center;padding:28px 16px 20px;">
+      <div style="position:relative;width:100px;height:100px;">
+        <img id="edit-avatar-img" src="https://i.pravatar.cc/136?img=3" style="width:100px;height:100px;border-radius:50%;object-fit:cover;box-shadow:0 4px 16px rgba(0,0,0,0.15);" alt=""/>
+        <div class="avatar-edit-overlay" onclick="document.getElementById('avatar-input').click()">
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none"><path d="M12 20h9" stroke="#fff" stroke-width="2" stroke-linecap="round"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <input type="file" id="avatar-input" accept="image/*" style="display:none;" onchange="handleAvatarChange(event)"/>
+      </div>
+      <button style="margin-top:12px;background:none;border:none;color:var(--ios-blue);font-size:16px;font-weight:500;cursor:pointer;" onclick="document.getElementById('avatar-input').click()">Cambiar foto</button>
+    </div>
+    <div id="ep-extra-info-banner" class="info-card">
+      <div id="ep-extra-info-banner-title" class="info-card-title">Completa más información</div>
+      <div id="ep-extra-info-banner-copy" class="info-card-copy">Rellena este bloque adicional para completar tu perfil. Si alguna pregunta no aplica, indica “No aplica”.</div>
+    </div>
+    <div class="group-label" style="padding:0 32px 6px;">INFORMACIÓN PERSONAL</div>
+    <div class="ios-input-group"><label>Nombre completo</label><input class="ios-input" type="text" id="ep-name" placeholder="Tu nombre"/></div>
+    <div class="ios-input-group"><label>Edad</label><input class="ios-input" type="number" id="ep-age" placeholder="25"/></div>
+    <div class="ios-input-group"><label>Correo electrónico</label><input class="ios-input" type="email" id="ep-email" placeholder="tu@correo.com"/></div>
+    <div class="ios-input-group"><label>Teléfono</label><input class="ios-input" type="tel" id="ep-phone" placeholder="+34 600 000 000"/></div>
+    <div class="ios-input-group"><label>Municipio actual</label><input class="ios-input" type="text" id="ep-town" placeholder="Tu localidad"/></div>
+    <div class="ios-input-group"><label>País de origen</label><input class="ios-input" type="text" id="ep-country" placeholder="Colombia, Marruecos..."/></div>
+    <div class="ios-input-group"><label>Situación laboral</label>
+      <select class="ios-select ios-input" id="ep-status"><option value="" disabled selected>Selecciona</option><option value="unemployed">Desempleado/a</option><option value="seeking">Buscando empleo</option><option value="employed">Trabajando</option><option value="self_employed">Autónomo/a</option><option value="student">Estudiante</option></select>
+    </div>
+    <div class="ios-input-group"><label>Comunidad autónoma de interés</label>
+      <select class="ios-select ios-input" id="ep-region"><option value="" disabled selected>Selecciona</option><option value="andalucia">Andalucía</option><option value="aragon">Aragón</option><option value="asturias">Asturias</option><option value="canarias">Canarias</option><option value="cantabria">Cantabria</option><option value="castilla_y_leon">Castilla y León</option><option value="castilla_la_mancha">Castilla-La Mancha</option><option value="cataluna">Cataluña</option><option value="comunidad_valenciana">Comunidad Valenciana</option><option value="extremadura">Extremadura</option><option value="galicia">Galicia</option><option value="madrid">Madrid</option><option value="murcia">Murcia</option><option value="navarra">Navarra</option><option value="pais_vasco">País Vasco</option></select>
+    </div>
+    <div class="group-label" style="padding:0 32px 6px;">MÁS INFORMACIÓN</div>
+    <div class="ios-input-group"><label>Lugar de origen</label><textarea class="ios-input ios-textarea" id="ep-territorial-origin" placeholder="Ej.: entorno urbano, semiurbano, rural o gran centro metropolitano"></textarea></div>
+    <div class="ios-input-group"><label>Trabajo anterior</label><textarea class="ios-input ios-textarea" id="ep-previous-professional-activity" placeholder="Resume tu actividad profesional anterior"></textarea></div>
+    <div class="ios-input-group"><label>Dónde has vivido y trabajado</label><textarea class="ios-input ios-textarea" id="ep-spatial-professional-trajectory" placeholder="Si aplica, describe los lugares donde has vivido o trabajado y cómo ha evolucionado tu trayectoria"></textarea></div>
+    <div class="ios-input-group"><label>Centros de estudio</label><textarea class="ios-input ios-textarea" id="ep-education-centers" placeholder="Indica pertenencia, tipología y, si procede, ideario"></textarea></div>
+    <div class="ios-input-group"><label>Historia familiar</label><textarea class="ios-input ios-textarea" id="ep-family-trajectory" placeholder="Hasta dos generaciones precedentes: natalidad, fecundidad, mortalidad, nupcialidad, uniones civiles y divorcios"></textarea></div>
+    <div class="group-label" style="padding:0 32px 6px;">UBICACIÓN</div>
+    <div class="group-cells" style="margin:0 16px 16px;border-radius:var(--r-lg);overflow:hidden;">
+      <div class="cell" onclick="toggleProfileTracking()">
+        <div class="cell-content">
+          <div class="cell-title" style="font-size:15px;">Compartir ubicación para análisis</div>
+          <div class="cell-subtitle" id="profile-location-status">Ubicación aún no registrada</div>
+        </div>
+        <button class="toggle on" id="ep-track-toggle" onclick="event.stopPropagation();toggleProfileTracking()"></button>
+      </div>
+    </div>
+    <div style="padding:8px 16px 16px;">
+      <div class="group-cells" style="border-radius:var(--r-lg);overflow:hidden;">
+        <div class="cell" onclick="doLogout()" style="cursor:pointer;">
+          <div class="cell-content"><div class="cell-title" style="color:var(--ios-red);">Cerrar sesión</div></div>
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4" stroke="#FF3B30" stroke-width="1.8" stroke-linecap="round"/><polyline points="16 17 21 12 16 7" stroke="#FF3B30" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><line x1="21" y1="12" x2="9" y2="12" stroke="#FF3B30" stroke-width="1.8" stroke-linecap="round"/></svg>
+        </div>
+      </div>
+    </div>
+    <div style="height:30px;"></div>
+  </div>
+</div>
+
+<!-- ══════ SEPE ══════ -->
+<div class="screen" id="s-sepe">
+  <div class="nav-bar" style="padding-top:64px;">
+    <button class="nav-btn" onclick="go('s-home')"><svg viewBox="0 0 24 24" width="20" height="20" fill="none"><path d="M15 18l-6-6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+    <span class="nav-title">SEPE</span>
+    <button class="nav-btn" onclick="openSepeWebsite()">
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><polyline points="15 3 21 3 21 9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><line x1="10" y1="14" x2="21" y2="3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+  </div>
+  <div class="scroll">
+    <div style="padding:16px;">
+      <div style="background:var(--cell-bg);border-radius:var(--r-xl);padding:20px;margin-bottom:16px;box-shadow:0 2px 12px rgba(0,0,0,0.06);">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+          <div style="width:52px;height:52px;background:#e8f0fe;border-radius:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+            <svg viewBox="0 0 24 24" width="28" height="28" fill="none"><rect x="3" y="3" width="18" height="18" rx="3" stroke="#1a56db" stroke-width="1.7"/><path d="M7 8h10M7 12h6M7 16h8" stroke="#1a56db" stroke-width="1.7" stroke-linecap="round"/></svg>
+          </div>
+          <div>
+            <div style="font-size:18px;font-weight:700;letter-spacing:-0.4px;">SEPE</div>
+            <div style="font-size:13px;color:var(--label2);">Servicio Público de Empleo Estatal</div>
+          </div>
+        </div>
+        <div style="font-size:15px;color:var(--label2);line-height:1.5;margin-bottom:16px;">Accede a la sede electrónica del SEPE para gestionar tu desempleo, prestaciones y búsqueda de empleo oficial.</div>
+        <div style="background:rgba(255,149,0,0.1);border-radius:10px;padding:12px 14px;margin-bottom:16px;">
+          <div style="font-size:13px;color:#b36200;line-height:1.4;"><strong>⚠ Nota:</strong> La web del SEPE no permite incrustarse en otras apps por seguridad. Pulsa cualquier acceso directo para abrir en tu navegador.</div>
+        </div>
+        <button class="btn btn-filled btn-full btn-h50" onclick="openSepeWebsite()">Abrir sede electrónica</button>
+      </div>
+      <div class="group-label" style="padding:0 4px 8px;">ACCESOS DIRECTOS</div>
+      <div class="group-cells" style="border-radius:var(--r-lg);overflow:hidden;background:var(--cell-bg);">
+        <div class="cell" onclick="openSepeShortcut('benefit')">
+          <div style="width:36px;height:36px;background:rgba(0,122,255,0.1);border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg viewBox="0 0 24 24" width="18" height="18" fill="none"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 100 7h5a3.5 3.5 0 110 7H6" stroke="#007AFF" stroke-width="1.8" stroke-linecap="round"/></svg></div>
+          <div class="cell-content"><div class="cell-title" style="font-size:15px;">Solicitar prestación</div><div class="cell-subtitle">Paro e INEM</div></div>
+          <svg viewBox="0 0 24 24" width="8" height="13" fill="none"><path d="M9 18l6-6-6-6" stroke="#C7C7CC" stroke-width="2" stroke-linecap="round"/></svg>
+        </div>
+        <div class="cell" onclick="openSepeShortcut('offers')">
+          <div style="width:36px;height:36px;background:rgba(52,199,89,0.1);border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg viewBox="0 0 24 24" width="18" height="18" fill="none"><rect x="2" y="7" width="20" height="15" rx="2" stroke="#34C759" stroke-width="1.8"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2" stroke="#34C759" stroke-width="1.8"/></svg></div>
+          <div class="cell-content"><div class="cell-title" style="font-size:15px;">Ofertas de empleo</div><div class="cell-subtitle">Búsqueda activa</div></div>
+          <svg viewBox="0 0 24 24" width="8" height="13" fill="none"><path d="M9 18l6-6-6-6" stroke="#C7C7CC" stroke-width="2" stroke-linecap="round"/></svg>
+        </div>
+        <div class="cell" onclick="openSepeShortcut('training')">
+          <div style="width:36px;height:36px;background:rgba(255,149,0,0.1);border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg viewBox="0 0 24 24" width="18" height="18" fill="none"><path d="M22 10v6M2 10l10-5 10 5-10 5-10-5z" stroke="#FF9500" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M6 12v5c3 3 9 3 12 0v-5" stroke="#FF9500" stroke-width="1.8" stroke-linecap="round"/></svg></div>
+          <div class="cell-content"><div class="cell-title" style="font-size:15px;">Formación y cursos</div><div class="cell-subtitle">Plan de formación</div></div>
+          <svg viewBox="0 0 24 24" width="8" height="13" fill="none"><path d="M9 18l6-6-6-6" stroke="#C7C7CC" stroke-width="2" stroke-linecap="round"/></svg>
+        </div>
+        <div class="cell" onclick="openSepeShortcut('dossier')">
+          <div style="width:36px;height:36px;background:rgba(88,86,214,0.1);border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg viewBox="0 0 24 24" width="18" height="18" fill="none"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" stroke="#5856D6" stroke-width="1.8"/><polyline points="14 2 14 8 20 8" stroke="#5856D6" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+          <div class="cell-content"><div class="cell-title" style="font-size:15px;">Mi expediente</div><div class="cell-subtitle">Historial laboral</div></div>
+          <svg viewBox="0 0 24 24" width="8" height="13" fill="none"><path d="M9 18l6-6-6-6" stroke="#C7C7CC" stroke-width="2" stroke-linecap="round"/></svg>
+        </div>
+        <div class="cell" onclick="openSepeShortcut('appointment')">
+          <div style="width:36px;height:36px;background:rgba(255,59,48,0.1);border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg viewBox="0 0 24 24" width="18" height="18" fill="none"><rect x="3" y="4" width="18" height="18" rx="2" stroke="#FF3B30" stroke-width="1.8"/><line x1="16" y1="2" x2="16" y2="6" stroke="#FF3B30" stroke-width="1.8" stroke-linecap="round"/><line x1="8" y1="2" x2="8" y2="6" stroke="#FF3B30" stroke-width="1.8" stroke-linecap="round"/><line x1="3" y1="10" x2="21" y2="10" stroke="#FF3B30" stroke-width="1.8" stroke-linecap="round"/></svg></div>
+          <div class="cell-content"><div class="cell-title" style="font-size:15px;">Cita previa</div><div class="cell-subtitle">Pedir cita en oficina</div></div>
+          <svg viewBox="0 0 24 24" width="8" height="13" fill="none"><path d="M9 18l6-6-6-6" stroke="#C7C7CC" stroke-width="2" stroke-linecap="round"/></svg>
+        </div>
+      </div>
+      <div style="height:30px;"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════ JOBS ══════ -->
+<div class="screen" id="s-jobs">
+  <div class="nav-bar large" style="padding-top:64px;"><span class="nav-title-large">Empleo</span></div>
+  <div class="search-bar" style="margin-top:10px;">
+    <svg viewBox="0 0 24 24" width="17" height="17" fill="none"><circle cx="11" cy="11" r="8" stroke="#8E8E93" stroke-width="1.7"/><path d="M21 21l-4.35-4.35" stroke="#8E8E93" stroke-width="1.7" stroke-linecap="round"/></svg>
+    <input type="text" id="jobs-search" placeholder="Buscar trabajo, empresa o provincia..."/>
+  </div>
+  <div class="chip-scroll" id="jobs-filters">
+    <button class="chip chip-active" data-category="Todos" onclick="setJobFilter(this.dataset.category, event)">Todos</button>
+    <button class="chip chip-inactive" data-category="Agricultura" onclick="setJobFilter(this.dataset.category, event)">Agricultura</button>
+    <button class="chip chip-inactive" data-category="Hostelería" onclick="setJobFilter(this.dataset.category, event)">Hostelería</button>
+    <button class="chip chip-inactive" data-category="Tecnología" onclick="setJobFilter(this.dataset.category, event)">Tecnología</button>
+    <button class="chip chip-inactive" data-category="Sanidad" onclick="setJobFilter(this.dataset.category, event)">Sanidad</button>
+    <button class="chip chip-inactive" data-category="Educación" onclick="setJobFilter(this.dataset.category, event)">Educación</button>
+  </div>
+  <div class="result-copy" id="jobs-summary">Preparando ofertas...</div>
+  <div class="scroll">
+    <div class="group-label" id="jobs-admin-label" style="padding:0 32px 6px;display:none;">PUBLICAR OFERTA</div>
+    <div class="admin-card" id="jobs-admin-card" style="display:none;">
+      <div id="jobs-admin-title" style="font-size:18px;font-weight:700;letter-spacing:-0.3px;color:var(--label);">Nueva oferta de empleo</div>
+      <div id="jobs-admin-copy" style="font-size:14px;color:var(--label2);line-height:1.55;margin-top:8px;">Solo el usuario administrador puede publicar ofertas. Esta oferta entrará en el listado general y en las notificaciones.</div>
+      <div style="display:flex;align-items:center;gap:14px;margin-top:16px;">
+        <div class="community-form-preview">
+          <img id="job-image-preview" src="" alt="Portada de la oferta"/>
+        </div>
+        <div style="flex:1;">
+          <button id="job-image-button" class="btn btn-gray btn-h44" style="width:100%;" onclick="document.getElementById('job-image-input').click()">Añadir imagen</button>
+          <div class="saved-note" id="job-image-help">Sube una imagen real de la oferta o del lugar de trabajo.</div>
+        </div>
+      </div>
+      <input type="file" id="job-image-input" accept="image/*" style="display:none;" onchange="handleJobImageChange(event)"/>
+      <div class="ios-input-group" style="margin-top:16px;"><label id="job-company-label">Empresa</label><input class="ios-input" type="text" id="job-company" placeholder="Ej.: Cooperativa Sierra Norte"/></div>
+      <div class="ios-input-group"><label id="job-title-label">Título</label><input class="ios-input" type="text" id="job-title" placeholder="Ej.: Técnico/a agrícola" oninput="syncJobTitlePreview()"/></div>
+      <div class="ios-input-group"><label id="job-location-label">Ubicación</label><input class="ios-input" type="text" id="job-location" placeholder="Ej.: Soria, Castilla y León"/></div>
+      <div class="ios-input-group"><label id="job-salary-label">Salario</label><input class="ios-input" type="text" id="job-salary" placeholder="Ej.: 1.900€/mes"/></div>
+      <div class="ios-input-group"><label id="job-category-label">Categoría</label>
+        <select class="ios-select" id="job-category">
+          <option value="">Selecciona</option>
+          <option value="Agricultura">Agricultura</option>
+          <option value="Hostelería">Hostelería</option>
+          <option value="Tecnología">Tecnología</option>
+          <option value="Sanidad">Sanidad</option>
+          <option value="Educación">Educación</option>
+        </select>
+      </div>
+      <div class="ios-input-group"><label id="job-badge-label-label">Etiqueta</label>
+        <select class="ios-select" id="job-badge-label">
+          <option value="">Selecciona</option>
+          <option value="Nuevo">Nuevo</option>
+          <option value="Urgente">Urgente</option>
+          <option value="Destacado">Destacado</option>
+          <option value="Híbrido">Híbrido</option>
+          <option value="Aula Rural">Aula Rural</option>
+          <option value="Campo">Campo</option>
+          <option value="Temporada">Temporada</option>
+          <option value="Infraestructura">Infraestructura</option>
+          <option value="Comunidad">Comunidad</option>
+          <option value="Bosque">Bosque</option>
+          <option value="Alojamiento">Alojamiento</option>
+        </select>
+      </div>
+      <div class="ios-input-group"><label id="job-badge-tone-label">Color de la etiqueta</label>
+        <select class="ios-select" id="job-badge-tone">
+          <option value="">Selecciona</option>
+          <option value="blue">Azul</option>
+          <option value="green">Verde</option>
+          <option value="red">Rojo</option>
+        </select>
+      </div>
+      <div class="ios-input-group"><label id="job-type-label">Contrato</label>
+        <select class="ios-select" id="job-type">
+          <option value="">Selecciona</option>
+          <option value="Indefinido">Indefinido</option>
+          <option value="Temporal">Temporal</option>
+          <option value="Sustitución larga">Sustitución larga</option>
+          <option value="Fijo discontinuo">Fijo discontinuo</option>
+        </select>
+      </div>
+      <div class="ios-input-group"><label id="job-schedule-label">Jornada</label>
+        <select class="ios-select" id="job-schedule">
+          <option value="">Selecciona</option>
+          <option value="Jornada completa">Jornada completa</option>
+          <option value="Fines de semana">Fines de semana</option>
+          <option value="Turno rotativo">Turno rotativo</option>
+          <option value="Mañanas">Mañanas</option>
+          <option value="Turnos partidos">Turnos partidos</option>
+          <option value="Jornada continua">Jornada continua</option>
+          <option value="Tardes">Tardes</option>
+          <option value="Jornada intensiva">Jornada intensiva</option>
+          <option value="Turno partido">Turno partido</option>
+        </select>
+      </div>
+      <div class="ios-input-group"><label id="job-mode-label">Modalidad</label>
+        <select class="ios-select" id="job-mode">
+          <option value="">Selecciona</option>
+          <option value="Presencial">Presencial</option>
+          <option value="Híbrido">Híbrido</option>
+        </select>
+      </div>
+      <div class="ios-input-group"><label id="job-summary-label">Resumen</label><textarea class="ios-input ios-textarea" id="job-summary" placeholder="Descripción corta para la tarjeta de la oferta"></textarea></div>
+      <div class="ios-input-group"><label id="job-description-label">Descripción completa</label><textarea class="ios-input ios-textarea" id="job-description" placeholder="Explica el puesto, el contexto y las tareas principales"></textarea></div>
+      <div class="ios-input-group"><label id="job-requirements-label">Requisitos</label><textarea class="ios-input ios-textarea" id="job-requirements" placeholder="Escribe un requisito por línea"></textarea></div>
+      <div class="ios-input-group"><label id="job-benefits-label">Beneficios</label><textarea class="ios-input ios-textarea" id="job-benefits" placeholder="Escribe un beneficio por línea"></textarea></div>
+      <div class="ios-input-group"><label id="job-contact-label">Contacto</label><input class="ios-input" type="url" id="job-contact" placeholder="mailto:empleo@empresa.es o https://empresa.es/oferta"/></div>
+      <button id="job-save-btn" class="btn btn-filled btn-full btn-h50" onclick="saveAdminJob()">Publicar oferta</button>
+    </div>
+    <div style="padding-bottom:20px;" id="jobs-list"></div>
+  </div>
+  <div class="tab-bar">
+    <button class="tab-item" onclick="switchTo('s-home')"><div style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;"><svg viewBox="0 0 24 24" width="26" height="26" fill="none"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" stroke="currentColor" stroke-width="1.8"/><polyline points="9 22 9 12 15 12 15 22" stroke="currentColor" stroke-width="1.8"/></svg></div><span class="tab-label">Inicio</span></button>
+    <button class="tab-item active" onclick="switchTo('s-jobs')"><div style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;"><svg viewBox="0 0 24 24" width="26" height="26" fill="none"><rect x="2" y="7" width="20" height="15" rx="2" stroke="currentColor" stroke-width="1.8" fill="currentColor" fill-opacity="0.15"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2" stroke="currentColor" stroke-width="1.8" fill="none"/></svg></div><span class="tab-label">Empleo</span></button>
+    <button class="tab-item" onclick="switchTo('s-towns')"><div style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;"><svg viewBox="0 0 24 24" width="26" height="26" fill="none"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="10" r="3" stroke="currentColor" stroke-width="1.8"/></svg></div><span class="tab-label">Pueblos</span></button>
+    <button class="tab-item" onclick="switchTo('s-communities')"><div style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;"><svg viewBox="0 0 24 24" width="25" height="25" fill="none"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="9" cy="7" r="4" stroke="currentColor" stroke-width="1.8"/><path d="M22 21v-2a4 4 0 00-3-3.87" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M16 3.13a4 4 0 010 7.75" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></div><span class="tab-label">Comunidades</span></button>
+    <button class="tab-item" onclick="switchTo('s-saved')"><div style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;"><svg viewBox="0 0 24 24" width="26" height="26" fill="none"><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z" stroke="currentColor" stroke-width="1.8"/></svg></div><span class="tab-label">Guardados</span></button>
+  </div>
+</div>
+
+<!-- ══════ TOWNS ══════ -->
+<div class="screen" id="s-towns">
+  <div class="nav-bar large" style="padding-top:64px;"><span class="nav-title-large">Pueblos</span></div>
+  <div class="search-bar" style="margin-top:10px;"><svg viewBox="0 0 24 24" width="17" height="17" fill="none"><circle cx="11" cy="11" r="8" stroke="#8E8E93" stroke-width="1.7"/><path d="M21 21l-4.35-4.35" stroke="#8E8E93" stroke-width="1.7" stroke-linecap="round"/></svg><input type="text" id="towns-search" placeholder="Buscar por nombre, provincia o comunidad..."/></div>
+  <div class="chip-scroll" id="towns-filters"><button class="chip chip-active" data-filter="Todos" onclick="setTownFilter(this.dataset.filter, event)">Todos</button><button class="chip chip-inactive" data-filter="Menos de 1.000" onclick="setTownFilter(this.dataset.filter, event)">Menos de 1.000</button><button class="chip chip-inactive" data-filter="1.000-5.000" onclick="setTownFilter(this.dataset.filter, event)">1.000-5.000</button><button class="chip chip-inactive" data-filter="5.000-10.000" onclick="setTownFilter(this.dataset.filter, event)">5.000-10.000</button></div>
+  <div class="result-copy" id="towns-summary">Preparando mapa municipal de menos de 10.000 habitantes...</div>
+  <div style="flex:1;position:relative;overflow:hidden;">
+    <div id="map" style="width:100%;height:100%;z-index:0;"></div>
+    <div class="map-status" id="towns-loading">Cargando municipios de España con población oficial...</div>
+    <div class="town-card" id="town-card" style="display:none;">
+      <img id="town-thumb" src="" alt=""/>
+      <div class="town-body">
+        <div>
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;">
+            <div><div id="town-name" style="font-size:17px;font-weight:700;letter-spacing:-0.4px;">—</div><div id="town-prov" style="font-size:13px;color:var(--label2);margin-top:1px;">—</div></div>
+            <button id="town-save-btn" onclick="toggleSavedTown(undefined, event)" style="background:rgba(0,122,255,0.1);border:none;border-radius:99px;padding:4px 10px;font-size:12px;color:var(--ios-blue);font-weight:600;cursor:pointer;">+ Guardar</button>
+          </div>
+          <div style="display:flex;gap:14px;margin-top:10px;">
+            <div class="town-card-stat"><div id="town-population" class="town-card-stat-value" style="color:var(--ios-blue);">—</div><div class="town-card-stat-label">habitantes</div></div>
+            <div class="town-card-stat"><div id="town-profile" class="town-card-stat-value" style="color:var(--ios-green);">—</div><div class="town-card-stat-label">perfil</div></div>
+            <div class="town-card-stat"><div id="town-distance" class="town-card-stat-value" style="color:var(--ios-orange);">—</div><div id="town-distance-label" class="town-card-stat-label">código ine</div></div>
+          </div>
+          <div class="saved-note" id="town-preview-note">Población oficial INE 2025 y localización del municipio.</div>
+        </div>
+        <div class="saved-actions" style="margin-top:14px;">
+          <button class="btn btn-filled btn-h36" style="font-size:14px;flex:1;" onclick="openTownDetails()">Ver más detalles</button>
+          <button class="btn btn-gray btn-h36" style="font-size:13px;" onclick="hideTownCard()">Cerrar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="tab-bar">
+    <button class="tab-item" onclick="switchTo('s-home')"><div style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;"><svg viewBox="0 0 24 24" width="26" height="26" fill="none"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" stroke="currentColor" stroke-width="1.8"/><polyline points="9 22 9 12 15 12 15 22" stroke="currentColor" stroke-width="1.8"/></svg></div><span class="tab-label">Inicio</span></button>
+    <button class="tab-item" onclick="switchTo('s-jobs')"><div style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;"><svg viewBox="0 0 24 24" width="26" height="26" fill="none"><rect x="2" y="7" width="20" height="15" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2" stroke="currentColor" stroke-width="1.8"/></svg></div><span class="tab-label">Empleo</span></button>
+    <button class="tab-item active" onclick="switchTo('s-towns')"><div style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;"><svg viewBox="0 0 24 24" width="26" height="26" fill="none"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z" stroke="currentColor" stroke-width="1.8" fill="currentColor" fill-opacity="0.15"/><circle cx="12" cy="10" r="3" stroke="currentColor" stroke-width="1.8"/></svg></div><span class="tab-label">Pueblos</span></button>
+    <button class="tab-item" onclick="switchTo('s-communities')"><div style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;"><svg viewBox="0 0 24 24" width="25" height="25" fill="none"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="9" cy="7" r="4" stroke="currentColor" stroke-width="1.8"/><path d="M22 21v-2a4 4 0 00-3-3.87" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M16 3.13a4 4 0 010 7.75" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></div><span class="tab-label">Comunidades</span></button>
+    <button class="tab-item" onclick="switchTo('s-saved')"><div style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;"><svg viewBox="0 0 24 24" width="26" height="26" fill="none"><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z" stroke="currentColor" stroke-width="1.8"/></svg></div><span class="tab-label">Guardados</span></button>
+  </div>
+</div>
+
+<!-- ══════ COMMUNITIES ══════ -->
+<div class="screen" id="s-communities">
+  <div class="nav-bar large" style="padding-top:64px;"><span class="nav-title-large">Comunidades</span></div>
+  <div class="scroll">
+    <div class="admin-card" style="margin-top:16px;">
+      <div id="communities-hero-title" style="font-size:18px;font-weight:700;letter-spacing:-0.3px;color:var(--label);">Comunidades y asociaciones</div>
+      <div id="communities-hero-copy" style="font-size:14px;color:var(--label2);line-height:1.55;margin-top:8px;">Crea grupos abiertos para compartir apoyo, información local y acceso a chats de WhatsApp o Telegram.</div>
+    </div>
+    <div class="group-label" id="communities-create-label" style="padding:0 32px 6px;">CREAR COMUNIDAD</div>
+    <div class="admin-card">
+      <div style="display:flex;align-items:center;gap:14px;">
+        <div class="community-form-preview">
+          <img id="community-image-preview" src="" alt="Portada de la comunidad"/>
+        </div>
+        <div style="flex:1;">
+          <button id="community-image-button" class="btn btn-gray btn-h44" style="width:100%;" onclick="document.getElementById('community-image-input').click()">Añadir imagen</button>
+          <div class="saved-note" id="community-image-help">Sube una imagen de portada para que la comunidad sea más fácil de identificar.</div>
+        </div>
+      </div>
+      <input type="file" id="community-image-input" accept="image/*" style="display:none;" onchange="handleCommunityImageChange(event)"/>
+      <div class="ios-input-group" style="margin-top:16px;"><label>Título</label><input class="ios-input" type="text" id="community-title" placeholder="Ej.: Comunidad de marroquíes en Madrid" oninput="syncCommunityTitlePreview()"/></div>
+      <div class="ios-input-group"><label>Descripción</label><textarea class="ios-input ios-textarea" id="community-description" placeholder="Cuenta qué ofrece la comunidad, cómo ayuda y qué tipo de personas pueden entrar"></textarea></div>
+      <div class="ios-input-group"><label>Link del chat</label><input class="ios-input" type="url" id="community-link" placeholder="https://chat.whatsapp.com/... o https://t.me/..."/></div>
+      <button id="community-save-btn" class="btn btn-filled btn-full btn-h50" onclick="saveCommunity()">Publicar comunidad</button>
+    </div>
+    <div class="section-hdr"><span class="section-hdr-title" id="communities-list-title">Comunidades activas</span></div>
+    <div id="communities-list"></div>
+    <div style="height:30px;"></div>
+  </div>
+  <div class="tab-bar">
+    <button class="tab-item" onclick="switchTo('s-home')"><div style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;"><svg viewBox="0 0 24 24" width="26" height="26" fill="none"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" stroke="currentColor" stroke-width="1.8"/><polyline points="9 22 9 12 15 12 15 22" stroke="currentColor" stroke-width="1.8"/></svg></div><span class="tab-label">Inicio</span></button>
+    <button class="tab-item" onclick="switchTo('s-jobs')"><div style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;"><svg viewBox="0 0 24 24" width="26" height="26" fill="none"><rect x="2" y="7" width="20" height="15" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2" stroke="currentColor" stroke-width="1.8"/></svg></div><span class="tab-label">Empleo</span></button>
+    <button class="tab-item" onclick="switchTo('s-towns')"><div style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;"><svg viewBox="0 0 24 24" width="26" height="26" fill="none"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="10" r="3" stroke="currentColor" stroke-width="1.8"/></svg></div><span class="tab-label">Pueblos</span></button>
+    <button class="tab-item active" onclick="switchTo('s-communities')"><div style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;"><svg viewBox="0 0 24 24" width="25" height="25" fill="none"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2" stroke="currentColor" stroke-width="1.8" fill="currentColor" fill-opacity="0.15" stroke-linecap="round"/><circle cx="9" cy="7" r="4" stroke="currentColor" stroke-width="1.8" fill="currentColor" fill-opacity="0.15"/><path d="M22 21v-2a4 4 0 00-3-3.87" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M16 3.13a4 4 0 010 7.75" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></div><span class="tab-label">Comunidades</span></button>
+    <button class="tab-item" onclick="switchTo('s-saved')"><div style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;"><svg viewBox="0 0 24 24" width="26" height="26" fill="none"><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z" stroke="currentColor" stroke-width="1.8"/></svg></div><span class="tab-label">Guardados</span></button>
+  </div>
+</div>
+
+<!-- ══════ SAVED ══════ -->
+<div class="screen" id="s-saved">
+  <div class="nav-bar large" style="padding-top:64px;"><span class="nav-title-large">Guardados</span></div>
+  <div class="segment" style="margin-top:10px;">
+    <button class="seg-item active" data-panel="sp-jobs" onclick="savedTab(this,'sp-jobs')">Trabajos</button>
+    <button class="seg-item" data-panel="sp-towns" onclick="savedTab(this,'sp-towns')">Pueblos</button>
+  </div>
+  <div class="scroll saved-panel" id="sp-jobs">
+    <div style="padding-bottom:20px;" id="saved-jobs-list"></div>
+  </div>
+  <div class="scroll saved-panel" id="sp-towns" style="display:none;">
+    <div style="padding-bottom:20px;" id="saved-towns-list"></div>
+  </div>
+  <div class="tab-bar">
+    <button class="tab-item" onclick="switchTo('s-home')"><div style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;"><svg viewBox="0 0 24 24" width="26" height="26" fill="none"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" stroke="currentColor" stroke-width="1.8"/><polyline points="9 22 9 12 15 12 15 22" stroke="currentColor" stroke-width="1.8"/></svg></div><span class="tab-label">Inicio</span></button>
+    <button class="tab-item" onclick="switchTo('s-jobs')"><div style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;"><svg viewBox="0 0 24 24" width="26" height="26" fill="none"><rect x="2" y="7" width="20" height="15" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2" stroke="currentColor" stroke-width="1.8"/></svg></div><span class="tab-label">Empleo</span></button>
+    <button class="tab-item" onclick="switchTo('s-towns')"><div style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;"><svg viewBox="0 0 24 24" width="26" height="26" fill="none"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="10" r="3" stroke="currentColor" stroke-width="1.8"/></svg></div><span class="tab-label">Pueblos</span></button>
+    <button class="tab-item" onclick="switchTo('s-communities')"><div style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;"><svg viewBox="0 0 24 24" width="25" height="25" fill="none"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="9" cy="7" r="4" stroke="currentColor" stroke-width="1.8"/><path d="M22 21v-2a4 4 0 00-3-3.87" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M16 3.13a4 4 0 010 7.75" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></div><span class="tab-label">Comunidades</span></button>
+    <button class="tab-item active" onclick="switchTo('s-saved')"><div style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;"><svg viewBox="0 0 24 24" width="26" height="26" fill="none"><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z" stroke="currentColor" stroke-width="1.8" fill="currentColor" fill-opacity="0.15"/></svg></div><span class="tab-label">Guardados</span></button>
+  </div>
+</div>
+
+<!-- ══════ ADMIN ══════ -->
+<div class="screen" id="s-admin">
+  <div class="nav-bar" style="padding-top:64px;">
+    <button class="nav-btn" onclick="go('s-home')"><svg viewBox="0 0 24 24" width="20" height="20" fill="none"><path d="M15 18l-6-6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+    <span class="nav-title">Panel admin</span>
+    <button class="nav-btn" onclick="renderAdminScreen()">↻</button>
+  </div>
+  <div class="scroll">
+    <div class="admin-card" style="margin-top:16px;">
+      <div style="font-size:18px;font-weight:700;letter-spacing:-0.3px;color:var(--label);">Visualización de ubicaciones</div>
+      <div style="font-size:14px;color:var(--label2);line-height:1.55;margin-top:8px;">Dataset local de seguimiento para testing. En la web sólo se registra mientras el navegador puede ejecutar la aplicación.</div>
+    </div>
+    <div class="admin-grid">
+      <div class="admin-stat"><div class="admin-stat-label">Usuarios con señal</div><div class="admin-stat-value" id="admin-users-count">0</div></div>
+      <div class="admin-stat"><div class="admin-stat-label">Registros</div><div class="admin-stat-value" id="admin-records-count">0</div></div>
+    </div>
+    <div class="admin-toolbar">
+      <button class="btn btn-gray btn-h44" style="flex:1;" id="admin-reset-view-btn" onclick="resetAdminSelection()">Ver todos</button>
+      <button class="btn btn-filled btn-h44" style="flex:1;" id="admin-export-btn" onclick="downloadAdminTrackingExcel()">Descargar Excel</button>
+    </div>
+    <div class="admin-card" id="admin-selected-user-card">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;">
+        <div>
+          <div id="admin-selected-user-title" style="font-size:16px;font-weight:700;letter-spacing:-0.25px;color:var(--label);">Ruta seleccionada</div>
+          <div id="admin-selected-user-copy" style="font-size:14px;color:var(--label2);line-height:1.5;margin-top:6px;">Selecciona un usuario para ver en el mapa la unión de sus puntos de seguimiento y su historial.</div>
+        </div>
+        <span class="badge badge-green-fill" id="admin-selected-user-badge">0 puntos</span>
+      </div>
+    </div>
+    <div class="admin-map" id="admin-map"></div>
+    <div class="result-copy" id="admin-summary">Sin ubicaciones registradas todavía.</div>
+    <div class="admin-list" id="admin-user-locations"></div>
+  </div>
+</div>
+
+<!-- ══════ NOTIFICATIONS MODAL ══════ -->
+<div id="notifications-modal" style="display:none;position:absolute;inset:0;z-index:99998;background:rgba(0,0,0,0.45);backdrop-filter:blur(4px);align-items:flex-end;justify-content:center;" onclick="closeNotifications()">
+  <div style="background:var(--cell-bg);border-radius:28px 28px 0 0;width:100%;max-height:78%;display:flex;flex-direction:column;box-shadow:0 -8px 40px rgba(0,0,0,0.2);" onclick="event.stopPropagation()">
+    <div style="display:flex;justify-content:center;padding:12px 0 4px;"><div style="width:36px;height:4px;background:var(--ios-gray4);border-radius:99px;"></div></div>
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 20px 14px;border-bottom:0.5px solid var(--sep);">
+      <div id="notifications-modal-title" style="font-size:17px;font-weight:700;letter-spacing:-0.4px;">Notificaciones</div>
+      <button onclick="closeNotifications()" style="width:30px;height:30px;border-radius:50%;background:rgba(116,116,128,0.15);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;"><svg viewBox="0 0 24 24" width="14" height="14" fill="none"><path d="M18 6L6 18M6 6l12 12" stroke="#8E8E93" stroke-width="2.2" stroke-linecap="round"/></svg></button>
+    </div>
+    <div style="overflow-y:auto;padding:10px 0 24px;flex:1;-webkit-overflow-scrolling:touch;">
+      <div id="notifications-empty" class="empty-state" style="margin:16px;">Sin notificaciones</div>
+      <div id="notifications-list" class="group-cells notifications-list" style="margin:0 16px;border-radius:20px;overflow:hidden;"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════ JOB DETAIL MODAL ══════ -->
+<div id="job-detail-modal" class="detail-overlay" onclick="closeJobDetails()">
+  <div class="detail-sheet" onclick="event.stopPropagation()">
+    <div class="detail-grab"></div>
+    <div class="detail-scroll" id="job-detail-content"></div>
+  </div>
+</div>
+
+<!-- ══════ TOWN DETAIL MODAL ══════ -->
+<div id="town-detail-modal" class="detail-overlay" onclick="closeTownDetails()">
+  <div class="detail-sheet" onclick="event.stopPropagation()">
+    <div class="detail-grab"></div>
+    <div class="detail-scroll" id="town-detail-content"></div>
+  </div>
+</div>
+
+<!-- ══════ EXPERIMENT MODAL ══════ -->
+<div id="experiment-modal" class="modal-overlay" onclick="closeExperimentNotice()">
+  <div class="modal-card fu" onclick="event.stopPropagation()">
+    <div class="modal-badge">
+      <svg viewBox="0 0 24 24" width="24" height="24" fill="none">
+        <path d="M12 8v5" stroke="#FF9500" stroke-width="2" stroke-linecap="round"/>
+        <circle cx="12" cy="16.5" r="1.2" fill="#FF9500"/>
+        <path d="M10.3 3.9L3.7 15.3a2 2 0 001.7 3h13.2a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z" stroke="#FF9500" stroke-width="1.8" stroke-linejoin="round"/>
+      </svg>
+    </div>
+    <div class="modal-title">Aviso importante</div>
+    <div class="modal-copy">Registrándote estás entrando en el proyecto Arraigo, financiado por la Comunidad de Madrid. Algunos de los datos serán usados para el estudio.</div>
+    <button class="btn btn-filled btn-full btn-h50" onclick="closeExperimentNotice()">Entendido</button>
+  </div>
+</div>
+
+<div id="tracking-info-modal" class="modal-overlay" onclick="closeTrackingInfoNotice()">
+  <div class="modal-card fu" onclick="event.stopPropagation()">
+    <div class="modal-badge" style="background:rgba(0,122,255,0.12);">
+      <svg viewBox="0 0 24 24" width="24" height="24" fill="none">
+        <circle cx="12" cy="12" r="9" stroke="#007AFF" stroke-width="1.8"/>
+        <path d="M12 10v5" stroke="#007AFF" stroke-width="1.8" stroke-linecap="round"/>
+        <circle cx="12" cy="7" r="1.2" fill="#007AFF"/>
+      </svg>
+    </div>
+    <div class="modal-title">Más información sobre la ubicación</div>
+    <div class="modal-copy">La información de ubicación será utilizada para un muestreo y para la realización de un artículo científico sobre la inmigración en la Comunidad de Madrid.</div>
+    <button class="btn btn-filled btn-full btn-h50" onclick="closeTrackingInfoNotice()">Entendido</button>
+  </div>
+</div>
+
+<!-- ══════ PRIVACY MODAL ══════ -->
+<div id="privacy-modal" style="display:none;position:absolute;inset:0;z-index:99999;background:rgba(0,0,0,0.45);backdrop-filter:blur(4px);align-items:flex-end;justify-content:center;">
+  <div style="background:var(--cell-bg);border-radius:28px 28px 0 0;width:100%;max-height:82%;display:flex;flex-direction:column;box-shadow:0 -8px 40px rgba(0,0,0,0.2);">
+    <div style="display:flex;justify-content:center;padding:12px 0 4px;"><div style="width:36px;height:4px;background:var(--ios-gray4);border-radius:99px;"></div></div>
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 20px 14px;border-bottom:0.5px solid var(--sep);">
+      <div style="font-size:17px;font-weight:700;letter-spacing:-0.4px;">Política de privacidad</div>
+      <button onclick="closePrivacy()" style="width:30px;height:30px;border-radius:50%;background:rgba(116,116,128,0.15);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;"><svg viewBox="0 0 24 24" width="14" height="14" fill="none"><path d="M18 6L6 18M6 6l12 12" stroke="#8E8E93" stroke-width="2.2" stroke-linecap="round"/></svg></button>
+    </div>
+    <div style="overflow-y:auto;padding:20px 20px 36px;flex:1;-webkit-overflow-scrolling:touch;">
+      <div id="privacy-copy"></div>
+      <button class="btn btn-filled btn-full btn-h50" onclick="acceptPrivacy()">Entendido y acepto</button>
+    </div>
+  </div>
+</div>
+
+</div><!-- /device -->
+
+<!-- Carga todos los módulos JS -->
+<script type="module" src="js/main.js"></script>
+</body>
+</html>
