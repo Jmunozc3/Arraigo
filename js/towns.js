@@ -554,24 +554,35 @@ export async function openTownOfficialWebsite(id = currentTownId) {
   openExternalUrl(town.officialWebsite);
 }
 
-export function toggleSavedTown(id = currentTownId, event) {
+export async function toggleSavedTown(id = currentTownId, event) {
   if (event) event.stopPropagation();
 
   const town = getTownById(id) || DB.getSavedTowns().find(item => item.id === id) || null;
   if (!town) return;
 
-  const saved = DB.toggleSavedTown(town);
-  toast(saved ? t('towns.save') : t('towns.unsave'));
+  try {
+    const saved = await DB.toggleSavedTown(town);
+    if (saved == null) {
+      toast('Inicia sesión para guardar municipios.');
+      if (typeof window.go === 'function') window.go('s-login');
+      return;
+    }
 
-  const marker = markerById.get(town.id);
-  if (marker) marker.setStyle(getTownMarkerStyle(town));
+    toast(saved ? t('towns.save') : t('towns.unsave'));
 
-  if (currentTownId === town.id) {
-    renderTownPreview(town);
-    renderTownDetail(town);
+    const marker = markerById.get(town.id);
+    if (marker) marker.setStyle(getTownMarkerStyle(town));
+
+    if (currentTownId === town.id) {
+      renderTownPreview(town);
+      renderTownDetail(town);
+    }
+
+    emitAppEvent('arraigo:saved-changed', { type: 'town', id: town.id, saved });
+  } catch (error) {
+    console.error('No se pudo actualizar el municipio guardado:', error);
+    toast('No se pudo guardar el municipio.');
   }
-
-  emitAppEvent('arraigo:saved-changed', { type: 'town', id: town.id, saved });
 }
 
 function ensureUserMarker() {

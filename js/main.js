@@ -19,8 +19,12 @@ import { initLocationTracking } from './location.js';
 import { initAdmin } from './admin.js';
 
 // Arranque cuando el DOM esté listo
-document.addEventListener('DOMContentLoaded', () => {
-  DB.bootstrap();
+document.addEventListener('DOMContentLoaded', async () => {
+  try {
+    await DB.bootstrap();
+  } catch (error) {
+    console.error('No se pudo inicializar Supabase:', error);
+  }
   initI18n();
   initAuth();
   initProfile(); // carga sesión activa y conecta botón Editar

@@ -318,7 +318,7 @@ export function openEditProfile() {
   go('s-editprofile');
 }
 
-export function saveProfile() {
+export async function saveProfile() {
   const session = DB.getSession();
   if (!session) {
     go('s-home');
@@ -339,18 +339,23 @@ export function saveProfile() {
     additionalProfile: getAdditionalProfileDraft()
   };
 
-  DB.saveProfile(session.email, updated);
-  const nextSession = DB.getSession();
-  updateHomeProfile();
-  syncProfileLocationStatus(nextSession);
-  syncAdditionalProfileBanner(nextSession);
+  try {
+    await DB.saveProfile(session.email, updated);
+    const nextSession = DB.getSession();
+    updateHomeProfile();
+    syncProfileLocationStatus(nextSession);
+    syncAdditionalProfileBanner(nextSession);
 
-  window.dispatchEvent(new CustomEvent('arraigo:session-changed', {
-    detail: { session: nextSession }
-  }));
+    window.dispatchEvent(new CustomEvent('arraigo:session-changed', {
+      detail: { session: nextSession }
+    }));
 
-  go('s-home');
-  toast(t('profile.updated'));
+    go('s-home');
+    toast(t('profile.updated'));
+  } catch (error) {
+    console.error('No se pudo guardar el perfil:', error);
+    toast('No se pudo guardar el perfil.');
+  }
 }
 
 export function handleAvatarChange(event) {

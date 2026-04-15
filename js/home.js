@@ -22,6 +22,14 @@ const NEWS_FALLBACK_IMAGES = [
 let homeNewsItems = [];
 let homeNewsStatusMode = 'loading';
 
+function getNewsCacheStorage() {
+  try {
+    return window.sessionStorage;
+  } catch (error) {
+    return null;
+  }
+}
+
 function getNotificationTypeLabel(type) {
   if (type === 'job') return t('notifications.typeJob');
   if (type === 'community') return t('notifications.typeCommunity');
@@ -29,20 +37,7 @@ function getNotificationTypeLabel(type) {
 }
 
 function ensureNotificationExamples() {
-  const meta = DB.getNotificationMeta();
-  if (meta.examplesSeeded) return;
-
-  DB.addNotification({
-    type: 'system',
-    title: t('notifications.welcomeTitle'),
-    body: t('notifications.welcomeBody'),
-    isRead: false
-  });
-
-  DB.saveNotificationMeta({
-    ...meta,
-    examplesSeeded: true
-  });
+  return undefined;
 }
 
 function renderNotificationBadge() {
@@ -125,15 +120,19 @@ function formatRelativeTime(dateValue) {
 }
 
 function getCachedHomeNews() {
+  const storage = getNewsCacheStorage();
+  if (!storage) return null;
   try {
-    return JSON.parse(localStorage.getItem(HOME_NEWS_CACHE_KEY) || 'null');
+    return JSON.parse(storage.getItem(HOME_NEWS_CACHE_KEY) || 'null');
   } catch (error) {
     return null;
   }
 }
 
 function saveCachedHomeNews(items) {
-  localStorage.setItem(HOME_NEWS_CACHE_KEY, JSON.stringify({
+  const storage = getNewsCacheStorage();
+  if (!storage) return;
+  storage.setItem(HOME_NEWS_CACHE_KEY, JSON.stringify({
     fetchedAt: Date.now(),
     items
   }));
@@ -310,13 +309,17 @@ function rerenderHomeLanguage() {
   renderNotificationBadge();
 }
 
-export function openNotifications() {
+export async function openNotifications() {
   const modal = document.getElementById('notifications-modal');
   if (!modal) return;
 
   renderNotificationsList();
   modal.style.display = 'flex';
-  DB.markAllNotificationsRead();
+  try {
+    await DB.markAllNotificationsRead();
+  } catch (error) {
+    console.error('No se pudieron marcar las notificaciones como leídas:', error);
+  }
   renderNotificationsList();
   renderNotificationBadge();
 }

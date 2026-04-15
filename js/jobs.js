@@ -278,58 +278,7 @@ function renderEmptyJobs() {
 }
 
 function syncJobNotifications() {
-  const meta = DB.getNotificationMeta();
-  const visibleJobs = getVisibleJobsData();
-  const currentJobIds = visibleJobs.map(job => job.id);
-  const seenIds = new Set(meta.jobIdsSeen || []);
-  const unseenJobs = visibleJobs.filter(job => !seenIds.has(job.id));
-
-  let createdNotifications = 0;
-
-  if (!Array.isArray(meta.jobIdsSeen) || meta.jobIdsSeen.length === 0) {
-    unseenJobs.slice(0, 3).forEach(job => {
-      const created = DB.addNotification({
-        type: 'job',
-        title: t('notifications.newJobTitle'),
-        body: t('notifications.newJobBody', {
-          title: job.title,
-          location: translateLocationLabel(job.location)
-        }),
-        actionType: 'job',
-        actionTargetId: job.id
-      });
-      if (created) createdNotifications += 1;
-    });
-
-    DB.saveNotificationMeta({
-      ...meta,
-      jobIdsSeen: currentJobIds
-    });
-
-    if (createdNotifications) emitAppEvent('arraigo:notifications-changed', { count: createdNotifications });
-    return;
-  }
-
-  unseenJobs.forEach(job => {
-    const created = DB.addNotification({
-      type: 'job',
-      title: t('notifications.newJobTitle'),
-      body: t('notifications.newJobBody', {
-        title: job.title,
-        location: translateLocationLabel(job.location)
-      }),
-      actionType: 'job',
-      actionTargetId: job.id
-    });
-    if (created) createdNotifications += 1;
-  });
-
-  DB.saveNotificationMeta({
-    ...meta,
-    jobIdsSeen: Array.from(new Set([...(meta.jobIdsSeen || []), ...currentJobIds]))
-  });
-
-  if (createdNotifications) emitAppEvent('arraigo:notifications-changed', { count: createdNotifications });
+  return undefined;
 }
 
 export function renderJobs() {
@@ -429,21 +378,32 @@ export function openJobContact(id = currentJobId) {
   openExternalUrl(job.contactUrl);
 }
 
-export function toggleSavedJob(id, event) {
+export async function toggleSavedJob(id, event) {
   if (event) event.stopPropagation();
 
   const job = getJobById(id);
   if (!job) return;
 
-  const saved = DB.toggleSavedJob(job);
-  toast(saved ? t('jobs.save') : t('jobs.unsave'));
+  try {
+    const saved = await DB.toggleSavedJob(job);
+    if (saved == null) {
+      toast('Inicia sesión para guardar ofertas.');
+      if (typeof window.go === 'function') window.go('s-login');
+      return;
+    }
 
-  renderJobs();
-  if (currentJobId === id) renderJobDetails(job);
-  emitAppEvent('arraigo:saved-changed', { type: 'job', id, saved });
+    toast(saved ? t('jobs.save') : t('jobs.unsave'));
+
+    renderJobs();
+    if (currentJobId === id) renderJobDetails(job);
+    emitAppEvent('arraigo:saved-changed', { type: 'job', id, saved });
+  } catch (error) {
+    console.error('No se pudo actualizar la oferta guardada:', error);
+    toast('No se pudo guardar la oferta.');
+  }
 }
 
-export function deleteJob(id, event) {
+export async function deleteJob(id, event) {
   if (event) {
     event.stopPropagation();
     event.preventDefault();
@@ -454,72 +414,65 @@ export function deleteJob(id, event) {
     return;
   }
 
-  const deleted = DB.hideJob(id);
-  if (!deleted) {
-    toast(t('jobs.deleteForbidden'));
-    return;
-  }
+  try {
+    const deleted = await DB.hideJob(id);
+    if (!deleted) {
+      toast(t('jobs.deleteForbidden'));
+      return;
+    }
 
-  if (currentJobId === id) closeJobDetails();
-  renderJobs();
-  emitAppEvent('arraigo:saved-changed', { type: 'job', id, hidden: true });
-  toast(t('jobs.deleted'));
+    if (currentJobId === id) closeJobDetails();
+    renderJobs();
+    emitAppEvent('arraigo:saved-changed', { type: 'job', id, hidden: true });
+    toast(t('jobs.deleted'));
+  } catch (error) {
+    console.error('No se pudo eliminar la oferta:', error);
+    toast('No se pudo eliminar la oferta.');
+  }
 }
 
-export function saveAdminJob() {
+export async function saveAdminJob() {
   if (!DB.isAdminSession()) {
     toast(t('jobs.adminOnlyComposer'));
     return;
   }
 
-  const job = DB.createJob({
-    category: readJobFormValue('job-category'),
-    badge: {
-      label: readJobFormValue('job-badge-label'),
-      tone: readJobFormValue('job-badge-tone')
-    },
-    company: readJobFormValue('job-company'),
-    title: readJobFormValue('job-title'),
-    salary: readJobFormValue('job-salary'),
-    location: readJobFormValue('job-location'),
-    type: readJobFormValue('job-type'),
-    schedule: readJobFormValue('job-schedule'),
-    mode: readJobFormValue('job-mode'),
-    image: adminJobImageDraft || buildJobPlaceholder(readJobFormValue('job-title')),
-    summary: readJobFormValue('job-summary'),
-    description: readJobFormValue('job-description'),
-    requirements: readJobFormLines('job-requirements'),
-    benefits: readJobFormLines('job-benefits'),
-    contactUrl: readJobFormValue('job-contact')
-  });
+  try {
+    const job = await DB.createJob({
+      category: readJobFormValue('job-category'),
+      badge: {
+        label: readJobFormValue('job-badge-label'),
+        tone: readJobFormValue('job-badge-tone')
+      },
+      company: readJobFormValue('job-company'),
+      title: readJobFormValue('job-title'),
+      salary: readJobFormValue('job-salary'),
+      location: readJobFormValue('job-location'),
+      type: readJobFormValue('job-type'),
+      schedule: readJobFormValue('job-schedule'),
+      mode: readJobFormValue('job-mode'),
+      image: adminJobImageDraft || buildJobPlaceholder(readJobFormValue('job-title')),
+      summary: readJobFormValue('job-summary'),
+      description: readJobFormValue('job-description'),
+      requirements: readJobFormLines('job-requirements'),
+      benefits: readJobFormLines('job-benefits'),
+      contactUrl: readJobFormValue('job-contact')
+    });
 
-  if (!job) {
-    toast(t('jobs.adminRequiredFields'));
-    return;
+    if (!job) {
+      toast(t('jobs.adminRequiredFields'));
+      return;
+    }
+
+    clearAdminJobForm();
+    renderJobs();
+    emitAppEvent('arraigo:notifications-changed');
+    emitAppEvent('arraigo:jobs-changed', { type: 'created', id: job.id });
+    toast(t('jobs.created'));
+  } catch (error) {
+    console.error('No se pudo crear la oferta:', error);
+    toast('No se pudo crear la oferta.');
   }
-
-  DB.addNotification({
-    type: 'job',
-    title: t('notifications.newJobTitle'),
-    body: t('notifications.newJobBody', {
-      title: job.title,
-      location: translateLocationLabel(job.location)
-    }),
-    actionType: 'job',
-    actionTargetId: job.id
-  });
-
-  const meta = DB.getNotificationMeta();
-  DB.saveNotificationMeta({
-    ...meta,
-    jobIdsSeen: Array.from(new Set([...(meta.jobIdsSeen || []), job.id]))
-  });
-
-  clearAdminJobForm();
-  renderJobs();
-  emitAppEvent('arraigo:notifications-changed');
-  emitAppEvent('arraigo:jobs-changed', { type: 'created', id: job.id });
-  toast(t('jobs.created'));
 }
 
 export function setJobFilter(category, event) {

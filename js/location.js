@@ -50,7 +50,7 @@ function emitUserPosition(position, source, capturedAt = Date.now()) {
   });
 }
 
-function recordPosition(position, source) {
+async function recordPosition(position, source) {
   const session = getTrackedSession();
   if (!session) return null;
 
@@ -68,7 +68,7 @@ function recordPosition(position, source) {
 
   if (!isNightly && !movedEnough && !waitedEnough) return null;
 
-  const record = DB.recordUserLocation({
+  const record = await DB.recordUserLocation({
     email: session.email,
     lat,
     lon,
@@ -109,9 +109,9 @@ export function captureLocationSample(source = 'manual') {
   if (!session || !navigator.geolocation) return Promise.resolve(null);
 
   return new Promise(resolve => {
-    navigator.geolocation.getCurrentPosition(position => {
+    navigator.geolocation.getCurrentPosition(async position => {
       permissionToastShown = false;
-      resolve(recordPosition(position, source));
+      resolve(await recordPosition(position, source));
     }, error => {
       handleLocationError(error, 'tracking.allow');
       resolve(null);
@@ -173,7 +173,7 @@ function startWatchIfNeeded() {
   if (watchId == null) {
     watchId = navigator.geolocation.watchPosition(position => {
       permissionToastShown = false;
-      recordPosition(position, 'foreground-watch');
+      void recordPosition(position, 'foreground-watch');
     }, error => {
       handleLocationError(error, 'tracking.failed');
     }, {

@@ -169,25 +169,30 @@ export function openCommunityChat(communityId) {
   openExternalUrl(community.chatLink);
 }
 
-export function deleteCommunity(communityId) {
+export async function deleteCommunity(communityId) {
   const session = DB.getSession();
   if (!session?.email) {
     toast(t('communities.loginRequired'));
     return;
   }
 
-  const deleted = DB.deleteCommunity(communityId, session.email);
-  if (!deleted) {
-    toast(t('communities.deleteForbidden'));
-    return;
-  }
+  try {
+    const deleted = await DB.deleteCommunity(communityId, session.email);
+    if (!deleted) {
+      toast(t('communities.deleteForbidden'));
+      return;
+    }
 
-  renderCommunitiesList();
-  emitAppEvent('arraigo:communities-changed');
-  toast(t('communities.deleted'));
+    renderCommunitiesList();
+    emitAppEvent('arraigo:communities-changed');
+    toast(t('communities.deleted'));
+  } catch (error) {
+    console.error('No se pudo eliminar la comunidad:', error);
+    toast(t('communities.saveFailed'));
+  }
 }
 
-export function saveCommunity() {
+export async function saveCommunity() {
   const session = DB.getSession();
   if (!session) {
     toast(t('communities.loginRequired'));
@@ -207,7 +212,7 @@ export function saveCommunity() {
   }
 
   try {
-    const created = DB.createCommunity({
+    const created = await DB.createCommunity({
       title,
       description,
       image,
@@ -219,14 +224,6 @@ export function saveCommunity() {
       toast(t('communities.required'));
       return;
     }
-
-    DB.addNotification({
-      type: 'community',
-      title: t('notifications.newCommunityTitle'),
-      body: t('notifications.newCommunityBody', { title: created.title }),
-      actionType: 'community',
-      actionTargetId: created.id
-    });
   } catch (error) {
     console.error('No se pudo guardar la comunidad:', error);
     toast(t('communities.saveFailed'));

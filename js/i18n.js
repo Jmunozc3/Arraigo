@@ -39,6 +39,14 @@ const REGION_VALUES = [
 
 let currentLanguage = 'es';
 
+function getLanguageStorage() {
+  try {
+    return window.sessionStorage;
+  } catch (error) {
+    return null;
+  }
+}
+
 const TRANSLATIONS = {
   es: {
     common: {
@@ -77,7 +85,7 @@ const TRANSLATIONS = {
       passwordLabel: 'Contraseña',
       passwordPlaceholder: 'Tu contraseña',
       forgot: '¿Olvidaste tu contraseña?',
-      adminHtml: 'Usuario admin de pruebas: <strong style="color:var(--label);">admin@arraigo.test</strong><br/>Contraseña: <strong style="color:var(--label);">ArraigoAdmin2026!</strong>',
+      adminHtml: 'El rol de administrador se asigna desde Supabase.',
       submit: 'Iniciar sesión',
       signupHtml: '¿No tienes cuenta? <a href="#" style="color:var(--ios-blue);" onclick="go(\'s-onboard\');return false;">Crear cuenta</a>'
     },
@@ -531,7 +539,7 @@ const TRANSLATIONS = {
       passwordLabel: 'Password',
       passwordPlaceholder: 'Your password',
       forgot: 'Forgot your password?',
-      adminHtml: 'Admin test user: <strong style="color:var(--label);">admin@arraigo.test</strong><br/>Password: <strong style="color:var(--label);">ArraigoAdmin2026!</strong>',
+      adminHtml: 'The administrator role is assigned from Supabase.',
       submit: 'Sign in',
       signupHtml: 'Don’t have an account? <a href="#" style="color:var(--ios-blue);" onclick="go(\'s-onboard\');return false;">Create one</a>'
     },
@@ -894,7 +902,7 @@ const TRANSLATIONS = {
       passwordLabel: 'Mot de passe',
       passwordPlaceholder: 'Votre mot de passe',
       forgot: 'Mot de passe oublié ?',
-      adminHtml: 'Utilisateur admin de test : <strong style="color:var(--label);">admin@arraigo.test</strong><br/>Mot de passe : <strong style="color:var(--label);">ArraigoAdmin2026!</strong>',
+      adminHtml: 'Le rôle administrateur est attribué depuis Supabase.',
       submit: 'Se connecter',
       signupHtml: 'Vous n’avez pas de compte ? <a href="#" style="color:var(--ios-blue);" onclick="go(\'s-onboard\');return false;">Créer un compte</a>'
     },
@@ -1218,7 +1226,7 @@ const TRANSLATIONS = {
       passwordLabel: 'Passwort',
       passwordPlaceholder: 'Dein Passwort',
       forgot: 'Passwort vergessen?',
-      adminHtml: 'Admin-Testkonto: <strong style="color:var(--label);">admin@arraigo.test</strong><br/>Passwort: <strong style="color:var(--label);">ArraigoAdmin2026!</strong>',
+      adminHtml: 'Die Administratorrolle wird in Supabase vergeben.',
       submit: 'Anmelden',
       signupHtml: 'Noch kein Konto? <a href="#" style="color:var(--ios-blue);" onclick="go(\'s-onboard\');return false;">Konto erstellen</a>'
     },
@@ -1542,7 +1550,7 @@ const TRANSLATIONS = {
       passwordLabel: 'Password',
       passwordPlaceholder: 'La tua password',
       forgot: 'Hai dimenticato la password?',
-      adminHtml: 'Utente admin di test: <strong style="color:var(--label);">admin@arraigo.test</strong><br/>Password: <strong style="color:var(--label);">ArraigoAdmin2026!</strong>',
+      adminHtml: 'Il ruolo di amministratore viene assegnato da Supabase.',
       submit: 'Accedi',
       signupHtml: 'Non hai un account? <a href="#" style="color:var(--ios-blue);" onclick="go(\'s-onboard\');return false;">Creane uno</a>'
     },
@@ -2400,7 +2408,10 @@ export function setLanguage(language, persist = true) {
   const nextLanguage = isSupportedLanguage(language) ? language : 'es';
   currentLanguage = nextLanguage;
 
-  if (persist) localStorage.setItem(LANGUAGE_KEY, nextLanguage);
+  if (persist) {
+    const storage = getLanguageStorage();
+    if (storage) storage.setItem(LANGUAGE_KEY, nextLanguage);
+  }
 
   document.documentElement.lang = nextLanguage;
   document.documentElement.dir = RTL_LANGUAGES.has(nextLanguage) ? 'rtl' : 'ltr';
@@ -2411,7 +2422,8 @@ export function setLanguage(language, persist = true) {
 }
 
 export function initI18n() {
-  const stored = localStorage.getItem(LANGUAGE_KEY);
+  const storage = getLanguageStorage();
+  const stored = storage?.getItem(LANGUAGE_KEY);
   currentLanguage = isSupportedLanguage(stored) ? stored : 'es';
   document.documentElement.lang = currentLanguage;
   document.documentElement.dir = RTL_LANGUAGES.has(currentLanguage) ? 'rtl' : 'ltr';

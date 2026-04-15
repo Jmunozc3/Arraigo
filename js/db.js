@@ -1,386 +1,698 @@
 // ══════════════════════════════════
-// db.js — Base de datos local (localStorage)
+// db.js — Capa de datos con Supabase
 // ══════════════════════════════════
 
-const USERS_KEY = 'arraigo_users';
-const SESSION_TOKEN_KEY = 'arraigo_session_token';
-const SESSION_STORE_KEY = 'arraigo_sessions';
-const APP_STATE_KEY = 'arraigo_app_state';
-const LOCATION_DATASET_KEY = 'arraigo_location_dataset_v1';
-const COMMUNITIES_KEY = 'arraigo_communities_v1';
-const NOTIFICATIONS_KEY = 'arraigo_notifications_v1';
-const NOTIFICATION_META_KEY = 'arraigo_notification_meta_v1';
-const CUSTOM_JOBS_KEY = 'arraigo_custom_jobs_v1';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { emitAppEvent } from './utils.js';
+import { SUPABASE_ANON_KEY, SUPABASE_URL, hasSupabaseConfig } from './supabase-config.js';
 
-const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000;
-const LOCATION_RECORD_LIMIT = 3000;
-const COMMUNITY_RECORD_LIMIT = 200;
-const NOTIFICATION_LIMIT = 120;
-
-const ADMIN_EMAIL = 'admin@arraigo.test';
-const ADMIN_PROFILE = {
-  name: 'Admin Arraigo',
-  email: ADMIN_EMAIL,
-  passwordHash: 'sha256:7f3f87694a5ff1f64900cc38046872ed913653ff7f8a8367f37c224cb6a19a85',
-  role: 'admin',
-  town: 'Madrid',
-  region: 'Madrid',
-  country: 'España',
-  status: 'Visualización y testing',
-  avatar: 'https://i.pravatar.cc/136?img=12',
-  trackingEnabled: false,
-  createdAt: 1774543200000
+const DEFAULT_NOTIFICATION_META = {
+  examplesSeeded: true,
+  jobIdsSeen: []
 };
 
-function readJson(key, fallback) {
+const state = {
+  client: null,
+  ready: false,
+  session: null,
+  profile: null,
+  jobs: [],
+  hiddenJobIds: [],
+  communities: [],
+  savedJobs: [],
+  savedJobRefs: new Map(),
+  savedTowns: [],
+  notifications: [],
+  locationRecords: [],
+  nightlyRegistry: {},
+  bootstrapError: null
+};
+
+function getStorage() {
   try {
-    const parsed = JSON.parse(localStorage.getItem(key) || 'null');
-    return parsed ?? fallback;
+    return window.sessionStorage;
   } catch (error) {
-    return fallback;
+    return undefined;
   }
 }
 
-function writeJson(key, value) {
-  localStorage.setItem(key, JSON.stringify(value));
-}
+function createSupabaseBrowserClient() {
+  if (state.client || !hasSupabaseConfig()) return state.client;
 
-function dedupeById(items) {
-  const seen = new Map();
-  (Array.isArray(items) ? items : []).forEach(item => {
-    if (!item || !item.id) return;
-    seen.set(item.id, item);
-  });
-  return Array.from(seen.values());
-}
-
-function dedupeStrings(items) {
-  return Array.from(new Set((Array.isArray(items) ? items : []).filter(Boolean)));
-}
-
-function removeSensitiveFields(user) {
-  if (!user) return null;
-  const nextUser = { ...user };
-  delete nextUser.pass;
-  delete nextUser.passwordHash;
-  return nextUser;
-}
-
-function ensureAdminUser(users) {
-  if (users?.[ADMIN_EMAIL]) return users;
-
-  const nextUsers = { ...(users || {}) };
-  nextUsers[ADMIN_EMAIL] = { ...ADMIN_PROFILE };
-  writeJson(USERS_KEY, nextUsers);
-  return nextUsers;
-}
-
-function generateToken() {
-  if (window.crypto?.randomUUID) return window.crypto.randomUUID();
-
-  const values = new Uint32Array(4);
-  if (window.crypto?.getRandomValues) {
-    window.crypto.getRandomValues(values);
-    return Array.from(values, value => value.toString(16).padStart(8, '0')).join('');
-  }
-
-  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
-}
-
-function getDateKey(dateValue = Date.now()) {
-  const date = new Date(dateValue);
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-}
-
-function readSessionStore() {
-  const store = readJson(SESSION_STORE_KEY, {});
-  const now = Date.now();
-  let changed = false;
-
-  Object.keys(store).forEach(token => {
-    const session = store[token];
-    if (!session?.email || !session?.expiresAt || session.expiresAt <= now) {
-      delete store[token];
-      changed = true;
+  state.client = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+      detectSessionInUrl: true,
+      storage: getStorage()
     }
   });
 
-  if (changed) writeJson(SESSION_STORE_KEY, store);
-  return store;
+  return state.client;
 }
 
-function getDefaultAppState() {
+function requireClient() {
+  const client = createSupabaseBrowserClient();
+  if (!client) {
+    throw new Error('Falta la configuración pública de Supabase');
+  }
+  return client;
+}
+
+function normalizeDateValue(value) {
+  if (!value) return null;
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date.getTime();
+}
+
+function toIsoString(value = Date.now()) {
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? new Date().toISOString() : date.toISOString();
+}
+
+function sanitizeJobSnapshot(job) {
+  if (!job?.id) return null;
+
   return {
-    savedJobs: [],
-    savedTowns: [],
-    hiddenJobIds: []
+    id: String(job.id),
+    category: String(job.category || ''),
+    badge: {
+      label: String(job.badge?.label || ''),
+      tone: String(job.badge?.tone || 'blue')
+    },
+    company: String(job.company || ''),
+    title: String(job.title || ''),
+    salary: String(job.salary || ''),
+    location: String(job.location || ''),
+    type: String(job.type || ''),
+    schedule: String(job.schedule || ''),
+    mode: String(job.mode || ''),
+    image: String(job.image || ''),
+    summary: String(job.summary || ''),
+    description: String(job.description || ''),
+    requirements: Array.isArray(job.requirements) ? job.requirements.map(item => String(item || '').trim()).filter(Boolean) : [],
+    benefits: Array.isArray(job.benefits) ? job.benefits.map(item => String(item || '').trim()).filter(Boolean) : [],
+    contactUrl: String(job.contactUrl || ''),
+    createdAt: Number(job.createdAt) || Date.now(),
+    createdByEmail: String(job.createdByEmail || ''),
+    createdByName: String(job.createdByName || '')
   };
 }
 
-function getDefaultLocationDataset() {
+function sanitizeTownSnapshot(town) {
+  if (!town?.id) return null;
+  return JSON.parse(JSON.stringify(town));
+}
+
+function mapProfile(row, authSession = null) {
+  if (!row?.id) return null;
+
   return {
-    records: [],
-    nightlyRegistry: {}
+    id: row.id,
+    name: row.name || '',
+    email: row.email || authSession?.user?.email || '',
+    phone: row.phone || '',
+    age: row.age == null ? '' : String(row.age),
+    town: row.town || '',
+    region: row.region || '',
+    country: row.country || '',
+    status: row.status || '',
+    avatar: row.avatar || 'https://i.pravatar.cc/136?img=3',
+    role: row.role || 'user',
+    trackingEnabled: row.tracking_enabled !== false,
+    additionalProfile: row.additional_profile || {},
+    privacyAcceptedAt: row.privacy_accepted_at || null,
+    createdAt: normalizeDateValue(row.created_at) || Date.now(),
+    updatedAt: normalizeDateValue(row.updated_at) || Date.now(),
+    sessionToken: authSession?.access_token || null,
+    sessionExpiresAt: authSession?.expires_at ? authSession.expires_at * 1000 : null,
+    sessionCreatedAt: authSession?.user?.created_at ? normalizeDateValue(authSession.user.created_at) : null,
+    sessionLastSeenAt: Date.now()
   };
 }
 
-function getDefaultCommunities() {
-  return [];
-}
-
-function getDefaultNotifications() {
-  return [];
-}
-
-function getDefaultCustomJobs() {
-  return [];
-}
-
-function getDefaultNotificationMeta() {
+function mapJob(row) {
   return {
-    examplesSeeded: false,
-    jobIdsSeen: []
+    id: row.id,
+    category: row.category,
+    badge: {
+      label: row.badge_label,
+      tone: row.badge_tone
+    },
+    company: row.company,
+    title: row.title,
+    salary: row.salary,
+    location: row.location,
+    type: row.type,
+    schedule: row.schedule,
+    mode: row.mode,
+    image: row.image,
+    summary: row.summary,
+    description: row.description,
+    requirements: Array.isArray(row.requirements) ? row.requirements : [],
+    benefits: Array.isArray(row.benefits) ? row.benefits : [],
+    contactUrl: row.contact_url,
+    source: row.source || 'admin',
+    createdAt: normalizeDateValue(row.created_at) || Date.now(),
+    createdBy: row.created_by || null,
+    createdByName: row.created_by_name || '',
+    createdByEmail: row.created_by_email || ''
   };
+}
+
+function mapCommunity(row) {
+  return {
+    id: row.id,
+    title: row.title,
+    description: row.description,
+    image: row.image,
+    chatLink: row.chat_link,
+    chatType: row.chat_type || 'link',
+    createdAt: normalizeDateValue(row.created_at) || Date.now(),
+    createdBy: row.created_by || null,
+    createdByName: row.created_by_name || '',
+    createdByEmail: row.created_by_email || ''
+  };
+}
+
+function mapSavedTown(row) {
+  const snapshot = row?.town_snapshot && typeof row.town_snapshot === 'object'
+    ? JSON.parse(JSON.stringify(row.town_snapshot))
+    : {};
+
+  return {
+    ...snapshot,
+    id: snapshot.id || row.town_id,
+    name: snapshot.name || row.town_name,
+    region: snapshot.region || row.region || '',
+    country: snapshot.country || row.country || 'España'
+  };
+}
+
+function mapNotification(row, readIds = new Set()) {
+  return {
+    id: row.id,
+    type: row.type || 'system',
+    title: row.title || '',
+    body: row.body || '',
+    actionType: row.action_type === 'none' ? '' : (row.action_type || ''),
+    actionTargetId: row.action_target || '',
+    isRead: readIds.has(row.id),
+    createdAt: normalizeDateValue(row.created_at) || Date.now()
+  };
+}
+
+function mapLocationRecord(row) {
+  return {
+    id: row.id,
+    email: row.user_email || '',
+    name: row.user_name || row.user_email || '',
+    role: row.user_role || 'user',
+    town: row.user_town || '',
+    region: row.user_region || '',
+    lat: Number(row.lat),
+    lon: Number(row.lon),
+    accuracy: row.accuracy_m == null ? null : Number(row.accuracy_m),
+    source: row.source || 'manual',
+    capturedAt: normalizeDateValue(row.captured_at) || Date.now(),
+    nightlyDateKey: row.nightly_date || null
+  };
+}
+
+function rebuildNightlyRegistry() {
+  const registry = {};
+
+  state.locationRecords.forEach(record => {
+    if (!record?.email || !record?.nightlyDateKey) return;
+    registry[`${record.email}__${record.nightlyDateKey}`] = record.id;
+  });
+
+  state.nightlyRegistry = registry;
+}
+
+async function runQuery(query) {
+  const { data, error } = await query;
+  if (error) throw error;
+  return data;
+}
+
+async function ensureProfileFromAuthUser(user) {
+  const client = requireClient();
+  const metadata = user?.user_metadata || {};
+
+  const payload = {
+    id: user.id,
+    email: user.email || '',
+    name: String(metadata.name || user.email?.split('@')[0] || 'Usuario'),
+    phone: metadata.phone || null,
+    age: metadata.age ? Number(metadata.age) : null,
+    town: metadata.town || null,
+    region: metadata.region || null,
+    country: metadata.country || null,
+    status: metadata.status || null,
+    avatar: metadata.avatar || metadata.avatar_url || null,
+    tracking_enabled: metadata.tracking_enabled !== false,
+    additional_profile: metadata.additional_profile || {},
+    privacy_accepted_at: metadata.privacy_accepted_at || null
+  };
+
+  const { data, error } = await client
+    .from('profiles')
+    .upsert(payload)
+    .select('*')
+    .single();
+
+  if (error) throw error;
+  return data;
+}
+
+async function loadSessionProfile() {
+  if (!hasSupabaseConfig()) {
+    state.session = null;
+    state.profile = null;
+    return null;
+  }
+
+  const client = requireClient();
+  const { data, error } = await client.auth.getSession();
+  if (error) throw error;
+
+  const authSession = data?.session || null;
+  if (!authSession?.user) {
+    state.session = null;
+    state.profile = null;
+    return null;
+  }
+
+  let profileRow = await runQuery(
+    client.from('profiles').select('*').eq('id', authSession.user.id).maybeSingle()
+  );
+
+  if (!profileRow) {
+    profileRow = await ensureProfileFromAuthUser(authSession.user);
+  }
+
+  const profile = mapProfile(profileRow, authSession);
+  state.profile = profile;
+  state.session = profile;
+  return profile;
+}
+
+function resetPrivateState() {
+  state.savedJobs = [];
+  state.savedJobRefs = new Map();
+  state.savedTowns = [];
+  state.notifications = [];
+  state.locationRecords = [];
+  state.nightlyRegistry = {};
+}
+
+async function loadJobs() {
+  const client = requireClient();
+  const rows = await runQuery(
+    client
+      .from('jobs')
+      .select('*')
+      .is('deleted_at', null)
+      .eq('is_hidden', false)
+      .order('created_at', { ascending: false })
+  );
+
+  state.jobs = (rows || []).map(mapJob);
+}
+
+async function loadHiddenJobs() {
+  const client = requireClient();
+  const rows = await runQuery(
+    client
+      .from('hidden_jobs')
+      .select('job_id')
+      .order('created_at', { ascending: false })
+  );
+
+  state.hiddenJobIds = (rows || []).map(row => row.job_id).filter(Boolean);
+}
+
+async function loadCommunities() {
+  const client = requireClient();
+  const rows = await runQuery(
+    client
+      .from('communities')
+      .select('*')
+      .is('deleted_at', null)
+      .order('created_at', { ascending: false })
+  );
+
+  state.communities = (rows || []).map(mapCommunity);
+}
+
+async function loadSavedJobs() {
+  if (!state.session?.id) {
+    state.savedJobs = [];
+    state.savedJobRefs = new Map();
+    return;
+  }
+
+  const client = requireClient();
+  const rows = await runQuery(
+    client
+      .from('saved_jobs')
+      .select('*')
+      .eq('user_id', state.session.id)
+      .order('created_at', { ascending: false })
+  );
+
+  state.savedJobRefs = new Map();
+  state.savedJobs = (rows || []).map(row => {
+    const snapshot = row?.job_snapshot && typeof row.job_snapshot === 'object'
+      ? JSON.parse(JSON.stringify(row.job_snapshot))
+      : {};
+    const jobId = snapshot.id || row.external_job_id || row.job_id;
+    const job = { ...snapshot, id: jobId };
+    state.savedJobRefs.set(jobId, row);
+    return job;
+  }).filter(job => job?.id);
+}
+
+async function loadSavedTowns() {
+  if (!state.session?.id) {
+    state.savedTowns = [];
+    return;
+  }
+
+  const client = requireClient();
+  const rows = await runQuery(
+    client
+      .from('saved_towns')
+      .select('*')
+      .eq('user_id', state.session.id)
+      .order('created_at', { ascending: false })
+  );
+
+  state.savedTowns = (rows || []).map(mapSavedTown).filter(town => town?.id);
+}
+
+async function loadNotifications() {
+  if (!state.session?.id) {
+    state.notifications = [];
+    return;
+  }
+
+  const client = requireClient();
+  const [notificationRows, readRows] = await Promise.all([
+    runQuery(
+      client
+        .from('notifications')
+        .select('*')
+        .or(`recipient_id.is.null,recipient_id.eq.${state.session.id}`)
+        .order('created_at', { ascending: false })
+    ),
+    runQuery(
+      client
+        .from('notification_reads')
+        .select('notification_id')
+        .eq('user_id', state.session.id)
+    )
+  ]);
+
+  const readIds = new Set((readRows || []).map(row => row.notification_id));
+  state.notifications = (notificationRows || []).map(row => mapNotification(row, readIds));
+}
+
+async function loadLocationRecords() {
+  if (!state.session?.id) {
+    state.locationRecords = [];
+    rebuildNightlyRegistry();
+    return;
+  }
+
+  const client = requireClient();
+  let query = client
+    .from('location_events')
+    .select('*')
+    .order('captured_at', { ascending: false });
+
+  if (!state.session || state.session.role !== 'admin') {
+    query = query.eq('user_id', state.session.id);
+  }
+
+  const rows = await runQuery(query);
+  state.locationRecords = (rows || []).map(mapLocationRecord);
+  rebuildNightlyRegistry();
+}
+
+async function loadPublicState() {
+  await Promise.all([
+    loadJobs(),
+    loadHiddenJobs(),
+    loadCommunities()
+  ]);
+}
+
+async function loadPrivateState() {
+  if (!state.session?.id) {
+    resetPrivateState();
+    return;
+  }
+
+  await Promise.all([
+    loadSavedJobs(),
+    loadSavedTowns(),
+    loadNotifications(),
+    loadLocationRecords()
+  ]);
+}
+
+function emitGlobalRefreshEvents() {
+  emitAppEvent('arraigo:session-changed', { session: state.session });
+  emitAppEvent('arraigo:saved-changed', { type: 'all' });
+  emitAppEvent('arraigo:notifications-changed');
+  emitAppEvent('arraigo:communities-changed');
+  emitAppEvent('arraigo:jobs-changed');
+}
+
+function buildProfileUpdatePayload(data = {}) {
+  const payload = {};
+
+  if (data.name !== undefined) payload.name = data.name || '';
+  if (data.phone !== undefined) payload.phone = data.phone || null;
+  if (data.age !== undefined) payload.age = data.age ? Number(data.age) : null;
+  if (data.town !== undefined) payload.town = data.town || null;
+  if (data.region !== undefined) payload.region = data.region || null;
+  if (data.country !== undefined) payload.country = data.country || null;
+  if (data.status !== undefined) payload.status = data.status || null;
+  if (data.avatar !== undefined) payload.avatar = data.avatar || null;
+  if (data.trackingEnabled !== undefined) payload.tracking_enabled = Boolean(data.trackingEnabled);
+  if (data.additionalProfile !== undefined) payload.additional_profile = data.additionalProfile || {};
+  if (data.privacyAcceptedAt !== undefined) payload.privacy_accepted_at = data.privacyAcceptedAt || null;
+
+  return payload;
 }
 
 export const DB = {
-  bootstrap() {
-    this.getUsers();
-    if (!this.getSessionToken()) {
-      const legacySession = readJson('arraigo_session', null);
-      if (legacySession?.email) this.setSession(legacySession);
-      localStorage.removeItem('arraigo_session');
+  async bootstrap() {
+    if (state.ready) return state.session;
+
+    if (!hasSupabaseConfig()) {
+      state.bootstrapError = new Error('Falta la anon key de Supabase');
+      state.ready = true;
+      return null;
     }
-    this.getSession();
+
+    createSupabaseBrowserClient();
+    await this.refreshState();
+    state.ready = true;
+    return state.session;
+  },
+
+  async refreshState(emit = false) {
+    await loadSessionProfile();
+    await loadPublicState();
+    await loadPrivateState();
+    if (emit) emitGlobalRefreshEvents();
+    return state.session;
+  },
+
+  getClient() {
+    return createSupabaseBrowserClient();
+  },
+
+  getBootstrapError() {
+    return state.bootstrapError;
   },
 
   getUsers() {
-    const users = readJson(USERS_KEY, {});
-    return ensureAdminUser(users);
+    if (!state.session?.email) return {};
+    return { [state.session.email]: state.session };
   },
 
-  saveUsers(users) {
-    const nextUsers = ensureAdminUser(users || {});
-    writeJson(USERS_KEY, nextUsers);
+  saveUsers() {
+    return undefined;
   },
 
   getAllUsers() {
-    return Object.values(this.getUsers()).map(removeSensitiveFields);
+    return state.session ? [state.session] : [];
   },
 
   getProfile(email) {
-    const users = this.getUsers();
-    return users[email] || null;
+    if (!email) return null;
+    if (state.session?.email === email) return state.session;
+    return null;
   },
 
-  saveProfile(email, data) {
-    const users = this.getUsers();
-    const currentProfile = users[email] || {
-      email,
-      role: 'user',
-      createdAt: Date.now()
+  async saveProfile(email, data) {
+    if (!state.session?.id || !email || state.session.email !== email) return null;
+
+    const client = requireClient();
+    const payload = buildProfileUpdatePayload(data);
+
+    const row = await runQuery(
+      client
+        .from('profiles')
+        .update(payload)
+        .eq('id', state.session.id)
+        .select('*')
+        .single()
+    );
+
+    state.profile = mapProfile(row, { user: { id: state.session.id, email: state.session.email } });
+    state.session = {
+      ...state.session,
+      ...state.profile,
+      sessionToken: state.session.sessionToken,
+      sessionExpiresAt: state.session.sessionExpiresAt,
+      sessionCreatedAt: state.session.sessionCreatedAt,
+      sessionLastSeenAt: Date.now()
     };
 
-    const nextProfile = { ...currentProfile };
-
-    Object.entries(data || {}).forEach(([key, value]) => {
-      if (value === undefined) return;
-      if (value === null) {
-        delete nextProfile[key];
-        return;
-      }
-      nextProfile[key] = value;
-    });
-
-    if (!nextProfile.role) nextProfile.role = 'user';
-    users[email] = nextProfile;
-    this.saveUsers(users);
-
-    return nextProfile;
+    return state.session;
   },
 
-  createSession(user) {
-    if (!user?.email) return null;
-
-    const token = generateToken();
-    const sessions = readSessionStore();
-    const now = Date.now();
-
-    sessions[token] = {
-      email: user.email,
-      role: user.role || 'user',
-      createdAt: now,
-      lastSeenAt: now,
-      expiresAt: now + SESSION_TTL_MS
-    };
-
-    writeJson(SESSION_STORE_KEY, sessions);
-    localStorage.setItem(SESSION_TOKEN_KEY, token);
-    return this.getSession();
+  async createSession() {
+    return this.refreshState();
   },
 
-  setSession(user) {
-    return this.createSession(user);
+  async setSession() {
+    return this.refreshState();
   },
 
   getSessionToken() {
-    return localStorage.getItem(SESSION_TOKEN_KEY);
+    return state.session?.sessionToken || null;
   },
 
   getSession() {
-    const token = this.getSessionToken();
-    if (!token) return null;
-
-    const sessions = readSessionStore();
-    const sessionMeta = sessions[token];
-    if (!sessionMeta) {
-      localStorage.removeItem(SESSION_TOKEN_KEY);
-      return null;
-    }
-
-    const user = this.getProfile(sessionMeta.email);
-    if (!user) {
-      delete sessions[token];
-      writeJson(SESSION_STORE_KEY, sessions);
-      localStorage.removeItem(SESSION_TOKEN_KEY);
-      return null;
-    }
-
-    const now = Date.now();
-    sessionMeta.lastSeenAt = now;
-    sessionMeta.expiresAt = now + SESSION_TTL_MS;
-    sessions[token] = sessionMeta;
-    writeJson(SESSION_STORE_KEY, sessions);
-
+    if (!state.session) return null;
     return {
-      ...removeSensitiveFields(user),
-      role: user.role || sessionMeta.role || 'user',
-      sessionToken: token,
-      sessionExpiresAt: sessionMeta.expiresAt,
-      sessionCreatedAt: sessionMeta.createdAt,
-      sessionLastSeenAt: sessionMeta.lastSeenAt
+      ...state.session,
+      sessionLastSeenAt: Date.now()
     };
   },
 
-  clearSession() {
-    const token = this.getSessionToken();
-    if (token) {
-      const sessions = readSessionStore();
-      delete sessions[token];
-      writeJson(SESSION_STORE_KEY, sessions);
+  async clearSession() {
+    if (!hasSupabaseConfig()) {
+      state.session = null;
+      state.profile = null;
+      resetPrivateState();
+      return;
     }
-    localStorage.removeItem(SESSION_TOKEN_KEY);
+
+    const client = requireClient();
+    await client.auth.signOut();
+    state.session = null;
+    state.profile = null;
+    resetPrivateState();
   },
 
   isAdminSession() {
-    return this.getSession()?.role === 'admin';
+    return state.session?.role === 'admin';
   },
 
   getAppState() {
-    const parsed = readJson(APP_STATE_KEY, getDefaultAppState());
     return {
-      savedJobs: dedupeById(parsed.savedJobs),
-      savedTowns: dedupeById(parsed.savedTowns),
-      hiddenJobIds: dedupeStrings(parsed.hiddenJobIds)
+      savedJobs: this.getSavedJobs(),
+      savedTowns: this.getSavedTowns(),
+      hiddenJobIds: this.getHiddenJobIds()
     };
   },
 
-  saveAppState(state) {
-    const nextState = {
-      savedJobs: dedupeById(state?.savedJobs),
-      savedTowns: dedupeById(state?.savedTowns),
-      hiddenJobIds: dedupeStrings(state?.hiddenJobIds)
-    };
-    writeJson(APP_STATE_KEY, nextState);
+  saveAppState() {
+    return undefined;
   },
 
   getSavedJobs() {
-    const state = this.getAppState();
-    const hiddenJobIds = new Set(state.hiddenJobIds);
-    return state.savedJobs.filter(job => job?.id && !hiddenJobIds.has(job.id));
+    return state.savedJobs.slice();
   },
 
   getSavedTowns() {
-    return this.getAppState().savedTowns;
+    return state.savedTowns.slice();
   },
 
   getHiddenJobIds() {
-    return this.getAppState().hiddenJobIds;
+    return state.hiddenJobIds.slice();
   },
 
   isJobHidden(jobId) {
-    return this.getHiddenJobIds().includes(jobId);
+    return state.hiddenJobIds.includes(jobId);
   },
 
   getCommunities() {
-    return readJson(COMMUNITIES_KEY, getDefaultCommunities())
-      .filter(item => item?.id)
-      .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+    return state.communities.slice();
   },
 
   getCustomJobs() {
-    return readJson(CUSTOM_JOBS_KEY, getDefaultCustomJobs())
-      .filter(item => item?.id)
-      .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+    return state.jobs.slice();
   },
 
-  saveCustomJobs(jobs) {
-    const nextJobs = (Array.isArray(jobs) ? jobs : [])
-      .filter(item => item?.id);
-    writeJson(CUSTOM_JOBS_KEY, nextJobs);
+  saveCustomJobs() {
+    return undefined;
   },
 
-  saveCommunities(communities) {
-    const nextCommunities = (Array.isArray(communities) ? communities : [])
-      .filter(item => item?.id)
-      .slice(0, COMMUNITY_RECORD_LIMIT);
-    writeJson(COMMUNITIES_KEY, nextCommunities);
+  saveCommunities() {
+    return undefined;
   },
 
-  createCommunity(entry) {
-    const session = this.getSession();
-    if (!session?.email) return null;
+  async createCommunity(entry) {
+    if (!state.session?.id) return null;
 
-    const createdAt = Date.now();
-    const community = {
-      id: generateToken(),
+    const client = requireClient();
+    const payload = {
+      id: crypto.randomUUID(),
       title: String(entry?.title || '').trim(),
       description: String(entry?.description || '').trim(),
       image: String(entry?.image || '').trim(),
-      chatLink: String(entry?.chatLink || '').trim(),
-      chatType: String(entry?.chatType || '').trim(),
-      createdAt,
-      createdByEmail: session.email,
-      createdByName: session.name || session.email
+      chat_link: String(entry?.chatLink || '').trim(),
+      chat_type: String(entry?.chatType || 'link').trim(),
+      created_by: state.session.id
     };
 
-    if (!community.title || !community.description || !community.chatLink) return null;
+    if (!payload.title || !payload.description || !payload.chat_link) return null;
 
-    const communities = this.getCommunities();
-    communities.unshift(community);
-    this.saveCommunities(communities);
+    const row = await runQuery(
+      client
+        .from('communities')
+        .insert(payload)
+        .select('*')
+        .single()
+    );
+
+    const community = mapCommunity(row);
+    state.communities.unshift(community);
+    await loadNotifications();
     return community;
   },
 
-  createJob(entry) {
-    const session = this.getSession();
-    if (!session?.email || session.role !== 'admin') return null;
+  async createJob(entry) {
+    if (!state.session?.id || state.session.role !== 'admin') return null;
 
     const normalizeList = items => (Array.isArray(items) ? items : [])
       .map(item => String(item || '').trim())
       .filter(Boolean);
 
-    const createdAt = Date.now();
-    const job = {
-      id: generateToken(),
+    const payload = {
+      id: crypto.randomUUID(),
       category: String(entry?.category || '').trim(),
-      badge: {
-        label: String(entry?.badge?.label || '').trim(),
-        tone: String(entry?.badge?.tone || '').trim()
-      },
+      badge_label: String(entry?.badge?.label || '').trim(),
+      badge_tone: String(entry?.badge?.tone || 'blue').trim(),
       company: String(entry?.company || '').trim(),
       title: String(entry?.title || '').trim(),
       salary: String(entry?.salary || '').trim(),
@@ -393,229 +705,331 @@ export const DB = {
       description: String(entry?.description || '').trim(),
       requirements: normalizeList(entry?.requirements),
       benefits: normalizeList(entry?.benefits),
-      contactUrl: String(entry?.contactUrl || '').trim(),
-      createdAt,
-      createdByEmail: session.email,
-      createdByName: session.name || session.email
+      contact_url: String(entry?.contactUrl || '').trim(),
+      source: 'admin',
+      created_by: state.session.id
     };
 
     const requiredValues = [
-      job.category,
-      job.badge.label,
-      job.badge.tone,
-      job.company,
-      job.title,
-      job.salary,
-      job.location,
-      job.type,
-      job.schedule,
-      job.mode,
-      job.image,
-      job.summary,
-      job.description,
-      job.contactUrl
+      payload.category,
+      payload.badge_label,
+      payload.badge_tone,
+      payload.company,
+      payload.title,
+      payload.salary,
+      payload.location,
+      payload.type,
+      payload.schedule,
+      payload.mode,
+      payload.image,
+      payload.summary,
+      payload.description,
+      payload.contact_url
     ];
 
-    if (requiredValues.some(value => !value) || !job.requirements.length || !job.benefits.length) return null;
+    if (requiredValues.some(value => !value) || !payload.requirements.length || !payload.benefits.length) {
+      return null;
+    }
 
-    const jobs = this.getCustomJobs();
-    jobs.unshift(job);
-    this.saveCustomJobs(jobs);
+    const client = requireClient();
+    const row = await runQuery(
+      client
+        .from('jobs')
+        .insert(payload)
+        .select('*')
+        .single()
+    );
+
+    const job = mapJob(row);
+    state.jobs.unshift(job);
+    await loadNotifications();
     return job;
   },
 
-  deleteCommunity(communityId, requesterEmail = this.getSession()?.email) {
-    if (!communityId || !requesterEmail) return false;
+  async deleteCommunity(communityId, requesterEmail = this.getSession()?.email) {
+    if (!communityId || !requesterEmail || !state.session?.id) return false;
 
-    const communities = this.getCommunities();
-    const target = communities.find(item => item.id === communityId);
-    const session = this.getSession();
-    const isAdmin = session?.email === requesterEmail && session.role === 'admin';
-    if (!target || (target.createdByEmail !== requesterEmail && !isAdmin)) return false;
+    const target = state.communities.find(item => item.id === communityId);
+    const isAdmin = state.session.role === 'admin';
+    const isOwner = target?.createdBy === state.session.id || target?.createdByEmail === requesterEmail;
+    if (!target || (!isOwner && !isAdmin)) return false;
 
-    this.saveCommunities(communities.filter(item => item.id !== communityId));
+    const client = requireClient();
+    await runQuery(
+      client
+        .from('communities')
+        .update({
+          deleted_at: toIsoString(),
+          deleted_by: state.session.id
+        })
+        .eq('id', communityId)
+        .select('id')
+        .single()
+    );
+
+    state.communities = state.communities.filter(item => item.id !== communityId);
     return true;
   },
 
   getNotifications() {
-    return readJson(NOTIFICATIONS_KEY, getDefaultNotifications())
-      .filter(item => item?.id)
-      .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+    return state.notifications.slice();
   },
 
-  saveNotifications(notifications) {
-    const nextNotifications = (Array.isArray(notifications) ? notifications : [])
-      .filter(item => item?.id)
-      .slice(0, NOTIFICATION_LIMIT);
-    writeJson(NOTIFICATIONS_KEY, nextNotifications);
+  saveNotifications() {
+    return undefined;
   },
 
-  addNotification(entry) {
-    const notification = {
-      id: generateToken(),
-      type: String(entry?.type || 'system'),
+  async addNotification(entry) {
+    if (!state.session?.id) return null;
+
+    const client = requireClient();
+    const payload = {
+      id: crypto.randomUUID(),
+      recipient_id: entry?.recipientId || null,
+      type: String(entry?.type || 'system').trim(),
       title: String(entry?.title || '').trim(),
       body: String(entry?.body || '').trim(),
-      actionType: String(entry?.actionType || '').trim(),
-      actionTargetId: String(entry?.actionTargetId || '').trim(),
-      isRead: Boolean(entry?.isRead),
-      createdAt: Number(entry?.createdAt) || Date.now()
+      action_type: entry?.actionType ? String(entry.actionType).trim() : 'none',
+      action_target: entry?.actionTargetId ? String(entry.actionTargetId).trim() : null,
+      created_by: state.session.id
     };
 
-    if (!notification.title || !notification.body) return null;
+    if (!payload.title || !payload.body) return null;
 
-    const notifications = this.getNotifications();
-    notifications.unshift(notification);
-    this.saveNotifications(notifications);
-    return notification;
+    const row = await runQuery(
+      client
+        .from('notifications')
+        .insert(payload)
+        .select('*')
+        .single()
+    );
+
+    await loadNotifications();
+    return mapNotification(row);
   },
 
-  markAllNotificationsRead() {
-    const notifications = this.getNotifications().map(item => ({
+  async markAllNotificationsRead() {
+    if (!state.session?.id) return [];
+
+    const unread = state.notifications.filter(item => !item.isRead);
+    if (!unread.length) return state.notifications;
+
+    const client = requireClient();
+    const rows = unread.map(item => ({
+      notification_id: item.id,
+      user_id: state.session.id,
+      read_at: toIsoString()
+    }));
+
+    await runQuery(
+      client
+        .from('notification_reads')
+        .upsert(rows, { onConflict: 'notification_id,user_id' })
+        .select('notification_id')
+    );
+
+    state.notifications = state.notifications.map(item => ({
       ...item,
       isRead: true
     }));
-    this.saveNotifications(notifications);
-    return notifications;
+
+    return state.notifications;
   },
 
   getUnreadNotificationsCount() {
-    return this.getNotifications().filter(item => !item.isRead).length;
+    return state.notifications.filter(item => !item.isRead).length;
   },
 
   getNotificationMeta() {
-    const meta = readJson(NOTIFICATION_META_KEY, getDefaultNotificationMeta());
-    return {
-      examplesSeeded: Boolean(meta?.examplesSeeded),
-      jobIdsSeen: Array.isArray(meta?.jobIdsSeen) ? Array.from(new Set(meta.jobIdsSeen.filter(Boolean))) : []
-    };
+    return { ...DEFAULT_NOTIFICATION_META };
   },
 
-  saveNotificationMeta(meta) {
-    writeJson(NOTIFICATION_META_KEY, {
-      examplesSeeded: Boolean(meta?.examplesSeeded),
-      jobIdsSeen: Array.isArray(meta?.jobIdsSeen) ? Array.from(new Set(meta.jobIdsSeen.filter(Boolean))) : []
-    });
+  saveNotificationMeta() {
+    return undefined;
   },
 
   isJobSaved(id) {
-    return this.getSavedJobs().some(job => job.id === id);
+    return state.savedJobs.some(job => job.id === id);
   },
 
   isTownSaved(id) {
-    return this.getSavedTowns().some(town => town.id === id);
+    return state.savedTowns.some(town => town.id === id);
   },
 
-  toggleSavedJob(job) {
-    if (!job?.id || this.isJobHidden(job.id)) return false;
+  async toggleSavedJob(job) {
+    if (!job?.id || !state.session?.id || this.isJobHidden(job.id)) return null;
 
-    const state = this.getAppState();
-    const index = state.savedJobs.findIndex(item => item.id === job.id);
+    const client = requireClient();
+    const currentRef = state.savedJobRefs.get(job.id);
 
-    if (index >= 0) {
-      state.savedJobs.splice(index, 1);
-      this.saveAppState(state);
+    if (currentRef) {
+      let query = client.from('saved_jobs').delete().eq('user_id', state.session.id);
+      query = currentRef.job_id
+        ? query.eq('job_id', currentRef.job_id)
+        : query.eq('external_job_id', currentRef.external_job_id || job.id);
+
+      await runQuery(query.select('id'));
+      state.savedJobs = state.savedJobs.filter(item => item.id !== job.id);
+      state.savedJobRefs.delete(job.id);
       return false;
     }
 
-    state.savedJobs.unshift(job);
-    this.saveAppState(state);
+    const snapshot = sanitizeJobSnapshot(job);
+    if (!snapshot) return null;
+
+    const isCustomJob = state.jobs.some(item => item.id === job.id);
+    const payload = {
+      user_id: state.session.id,
+      job_id: isCustomJob ? job.id : null,
+      external_job_id: isCustomJob ? null : String(job.id),
+      job_snapshot: snapshot
+    };
+
+    const row = await runQuery(
+      client
+        .from('saved_jobs')
+        .insert(payload)
+        .select('*')
+        .single()
+    );
+
+    state.savedJobs.unshift(snapshot);
+    state.savedJobRefs.set(job.id, row);
     return true;
   },
 
-  hideJob(jobId) {
-    if (!jobId || !this.isAdminSession()) return false;
+  async hideJob(jobId) {
+    if (!jobId || !state.session?.id || !this.isAdminSession()) return false;
 
-    const state = this.getAppState();
-    const customJobs = this.getCustomJobs();
-    const hasCustomJob = customJobs.some(item => item.id === jobId);
+    const client = requireClient();
+    const customJob = state.jobs.find(item => item.id === jobId);
 
-    if (hasCustomJob) {
-      this.saveCustomJobs(customJobs.filter(item => item.id !== jobId));
-    } else {
-      state.hiddenJobIds = dedupeStrings([jobId, ...(state.hiddenJobIds || [])]);
+    if (customJob) {
+      await runQuery(
+        client
+          .from('jobs')
+          .update({
+            is_hidden: true,
+            deleted_at: toIsoString(),
+            deleted_by: state.session.id
+          })
+          .eq('id', jobId)
+          .select('id')
+          .single()
+      );
+
+      state.jobs = state.jobs.filter(item => item.id !== jobId);
+    } else if (!state.hiddenJobIds.includes(jobId)) {
+      await runQuery(
+        client
+          .from('hidden_jobs')
+          .insert({
+            job_id: jobId,
+            hidden_by: state.session.id
+          })
+          .select('job_id')
+          .single()
+      );
+
+      state.hiddenJobIds.unshift(jobId);
     }
 
-    state.savedJobs = state.savedJobs.filter(item => item?.id !== jobId);
-    this.saveAppState(state);
+    state.savedJobs = state.savedJobs.filter(item => item.id !== jobId);
+    state.savedJobRefs.delete(jobId);
     return true;
   },
 
-  toggleSavedTown(town) {
-    const state = this.getAppState();
+  async toggleSavedTown(town) {
+    if (!town?.id || !state.session?.id) return null;
+
+    const client = requireClient();
     const index = state.savedTowns.findIndex(item => item.id === town.id);
 
     if (index >= 0) {
+      await runQuery(
+        client
+          .from('saved_towns')
+          .delete()
+          .eq('user_id', state.session.id)
+          .eq('town_id', town.id)
+          .select('town_id')
+      );
+
       state.savedTowns.splice(index, 1);
-      this.saveAppState(state);
       return false;
     }
 
-    state.savedTowns.unshift(town);
-    this.saveAppState(state);
+    const snapshot = sanitizeTownSnapshot(town);
+    if (!snapshot) return null;
+
+    await runQuery(
+      client
+        .from('saved_towns')
+        .upsert({
+          user_id: state.session.id,
+          town_id: String(town.id),
+          town_name: String(town.name || town.id),
+          region: town.region || null,
+          country: town.country || null,
+          town_snapshot: snapshot
+        }, { onConflict: 'user_id,town_id' })
+        .select('town_id')
+    );
+
+    state.savedTowns.unshift(snapshot);
     return true;
   },
 
   getLocationDataset() {
-    const dataset = readJson(LOCATION_DATASET_KEY, getDefaultLocationDataset());
     return {
-      records: Array.isArray(dataset.records) ? dataset.records : [],
-      nightlyRegistry: dataset.nightlyRegistry || {}
+      records: state.locationRecords.slice(),
+      nightlyRegistry: { ...state.nightlyRegistry }
     };
   },
 
-  saveLocationDataset(dataset) {
-    const nextDataset = {
-      records: Array.isArray(dataset?.records) ? dataset.records.slice(-LOCATION_RECORD_LIMIT) : [],
-      nightlyRegistry: dataset?.nightlyRegistry || {}
-    };
-    writeJson(LOCATION_DATASET_KEY, nextDataset);
+  saveLocationDataset() {
+    return undefined;
   },
 
   hasNightlyLocation(email, dateKey) {
-    const dataset = this.getLocationDataset();
-    return Boolean(dataset.nightlyRegistry?.[`${email}__${dateKey}`]);
+    return Boolean(state.nightlyRegistry[`${email}__${dateKey}`]);
   },
 
-  recordUserLocation(entry) {
-    const email = entry?.email || this.getSession()?.email;
-    if (!email) return null;
+  async recordUserLocation(entry) {
+    if (!state.session?.id) return null;
 
     const lat = Number(entry?.lat);
     const lon = Number(entry?.lon);
     if (!Number.isFinite(lat) || !Number.isFinite(lon)) return null;
 
-    const user = this.getProfile(email);
-    const capturedAt = Number(entry?.capturedAt) || Date.now();
-    const dataset = this.getLocationDataset();
-    const record = {
-      id: generateToken(),
-      email,
-      name: user?.name || email,
-      role: user?.role || 'user',
-      town: user?.town || '',
-      region: user?.region || '',
+    const client = requireClient();
+    const payload = {
+      id: crypto.randomUUID(),
+      user_id: state.session.id,
       lat,
       lon,
-      accuracy: Number(entry?.accuracy) || null,
-      source: entry?.source || 'manual',
-      capturedAt
+      accuracy_m: Number.isFinite(Number(entry?.accuracy)) ? Number(entry.accuracy) : null,
+      source: String(entry?.source || 'manual'),
+      nightly_date: entry?.nightlyDateKey || null,
+      captured_at: toIsoString(entry?.capturedAt || Date.now())
     };
 
-    dataset.records.push(record);
-    dataset.records = dataset.records.slice(-LOCATION_RECORD_LIMIT);
+    const row = await runQuery(
+      client
+        .from('location_events')
+        .insert(payload)
+        .select('*')
+        .single()
+    );
 
-    if (entry?.nightlyDateKey) {
-      dataset.nightlyRegistry[`${email}__${entry.nightlyDateKey}`] = record.id;
-    }
-
-    this.saveLocationDataset(dataset);
+    const record = mapLocationRecord(row);
+    state.locationRecords.unshift(record);
+    rebuildNightlyRegistry();
     return record;
   },
 
   getUserLocations(email) {
-    return this.getLocationDataset()
-      .records
+    return state.locationRecords
       .filter(record => record.email === email)
       .sort((a, b) => b.capturedAt - a.capturedAt);
   },
@@ -623,7 +1037,7 @@ export const DB = {
   getLatestLocationsByUser() {
     const latestByUser = new Map();
 
-    this.getLocationDataset().records.forEach(record => {
+    state.locationRecords.forEach(record => {
       const current = latestByUser.get(record.email);
       if (!current || record.capturedAt > current.capturedAt) {
         latestByUser.set(record.email, record);
@@ -635,14 +1049,14 @@ export const DB = {
 
   getLocationSummaryRows() {
     const counts = new Map();
-    this.getLocationDataset().records.forEach(record => {
+    state.locationRecords.forEach(record => {
       counts.set(record.email, (counts.get(record.email) || 0) + 1);
     });
 
     return this.getLatestLocationsByUser().map(record => ({
       ...record,
       recordsCount: counts.get(record.email) || 1,
-      dateKey: getDateKey(record.capturedAt)
+      dateKey: record.nightlyDateKey || null
     }));
   }
 };

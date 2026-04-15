@@ -1,5 +1,5 @@
 // ══════════════════════════════════
-// auth.js — Autenticación (registro y login)
+// auth.js — Autenticación con Supabase Auth
 // ══════════════════════════════════
 
 import { DB } from './db.js';
@@ -15,35 +15,13 @@ import {
   t
 } from './i18n.js';
 
+const SUPABASE_CONFIG_ERROR = 'Falta configurar la anon key de Supabase.';
+
 function syncSessionUi() {
   updateHomeProfile();
   emitAppEvent('arraigo:session-changed', {
     session: DB.getSession()
   });
-}
-
-async function sha256Hex(value) {
-  const encoded = new TextEncoder().encode(value);
-  const digest = await crypto.subtle.digest('SHA-256', encoded);
-  return Array.from(new Uint8Array(digest), byte => byte.toString(16).padStart(2, '0')).join('');
-}
-
-async function buildPasswordHash(password) {
-  return `sha256:${await sha256Hex(password)}`;
-}
-
-async function verifyPassword(profile, password) {
-  if (!profile) return false;
-
-  if (typeof profile.passwordHash === 'string') {
-    return profile.passwordHash === await buildPasswordHash(password);
-  }
-
-  if (typeof profile.pass === 'string') {
-    return profile.pass === password;
-  }
-
-  return false;
 }
 
 function getRegisterErrorElement() {
@@ -73,6 +51,27 @@ function clearAuthErrors() {
     errorElement.textContent = '';
     errorElement.style.display = 'none';
   });
+}
+
+function getClientOrShowError(targetErrorElement) {
+  const client = DB.getClient();
+  if (client) return client;
+
+  if (targetErrorElement) {
+    targetErrorElement.textContent = SUPABASE_CONFIG_ERROR;
+    targetErrorElement.style.display = 'block';
+  }
+
+  toast(SUPABASE_CONFIG_ERROR);
+  return null;
+}
+
+function getAuthMessage(error, fallbackKey) {
+  const message = String(error?.message || '').toLowerCase();
+  if (message.includes('already registered')) return t('auth.emailExists');
+  if (message.includes('invalid login credentials')) return t('auth.invalid');
+  if (message.includes('email not confirmed')) return 'Confirma tu correo antes de iniciar sesión.';
+  return t(fallbackKey);
 }
 
 export function selLang(language) {
@@ -124,8 +123,22 @@ export function openRegisterScreen() {
   openExperimentNotice();
 }
 
-export function requestPasswordRecovery() {
-  toast(t('auth.recovery'));
+export async function requestPasswordRecovery() {
+  const client = DB.getClient();
+  const email = (document.getElementById('login-email')?.value || '').trim().toLowerCase();
+
+  if (!client || !email) {
+    toast(t('auth.recovery'));
+    return;
+  }
+
+  const { error } = await client.auth.resetPasswordForEmail(email);
+  if (error) {
+    toast(t('auth.recovery'));
+    return;
+  }
+
+  toast('Si el correo existe, recibirás instrucciones para restablecer la contraseña.');
 }
 
 export async function doReg() {
@@ -146,13 +159,6 @@ export async function doReg() {
     return;
   }
 
-  const users = DB.getUsers();
-  if (users[email]) {
-    errEl.textContent = t('auth.emailExists');
-    errEl.style.display = 'block';
-    return;
-  }
-
   const age = document.getElementById('reg-age')?.value || '';
   const town = document.getElementById('reg-town')?.value || '';
   const phone = document.getElementById('reg-phone')?.value || '';
@@ -168,36 +174,58 @@ export async function doReg() {
     return;
   }
 
-  const userData = {
-    name,
-    email,
-    passwordHash: await buildPasswordHash(pass),
-    age,
-    town,
-    phone,
-    status,
-    country,
-    region,
-    role: 'user',
-    trackingEnabled,
-    avatar: 'https://i.pravatar.cc/136?img=3',
-    additionalProfile: {},
-    createdAt: Date.now()
-  };
+  const client = getClientOrShowError(errEl);
+  if (!client) return;
 
-  DB.saveProfile(email, userData);
-  DB.setSession(userData);
-  errEl.style.display = 'none';
+  try {
+    const { data, error } = await client.auth.signUp({
+      email,
+      password: pass,
+      options: {
+        data: {
+          name,
+          age,
+          town,
+          phone,
+          status,
+          country,
+          region,
+          tracking_enabled: trackingEnabled,
+          avatar: 'https://i.pravatar.cc/136?img=3',
+          additional_profile: {},
+          privacy_accepted_at: new Date().toISOString()
+        }
+      }
+    });
 
-  const bar = document.getElementById('reg-bar');
-  if (bar) bar.style.width = '100%';
+    if (error) {
+      errEl.textContent = getAuthMessage(error, 'auth.required');
+      errEl.style.display = 'block';
+      return;
+    }
 
-  syncSessionUi();
+    errEl.style.display = 'none';
+    const bar = document.getElementById('reg-bar');
+    if (bar) bar.style.width = '100%';
 
-  setTimeout(() => {
-    go('s-home');
-    toast(t('auth.accountCreated'));
-  }, 200);
+    await DB.refreshState();
+    syncSessionUi();
+
+    if (!data?.session) {
+      go('s-login');
+      toast('Cuenta creada. Revisa tu correo para confirmar el acceso si tu proyecto lo requiere.');
+      return;
+    }
+
+    setTimeout(() => {
+      go('s-home');
+      toast(t('auth.accountCreated'));
+    }, 200);
+  } catch (error) {
+    console.error('No se pudo completar el registro:', error);
+    errEl.textContent = 'No se pudo completar el registro.';
+    errEl.style.display = 'block';
+  }
 }
 
 export async function doLogin() {
@@ -211,39 +239,49 @@ export async function doLogin() {
     return;
   }
 
-  const profile = DB.getProfile(email);
-  const validPassword = await verifyPassword(profile, pass);
+  const client = getClientOrShowError(errEl);
+  if (!client) return;
 
-  if (!profile || !validPassword) {
-    errEl.textContent = t('auth.invalid');
-    errEl.style.display = 'block';
-    return;
-  }
-
-  if (!profile.passwordHash) {
-    DB.saveProfile(email, {
-      passwordHash: await buildPasswordHash(pass),
-      pass: null
+  try {
+    const { error } = await client.auth.signInWithPassword({
+      email,
+      password: pass
     });
+
+    if (error) {
+      errEl.textContent = getAuthMessage(error, 'auth.invalid');
+      errEl.style.display = 'block';
+      return;
+    }
+
+    errEl.style.display = 'none';
+    await DB.refreshState();
+    syncSessionUi();
+    go('s-home');
+
+    const profile = DB.getSession();
+    const welcomeName = (profile?.name || t('profile.guest')).split(' ')[0];
+    const welcomeMessage = profile?.role === 'admin'
+      ? t('auth.adminWelcome', { name: welcomeName })
+      : t('auth.welcome', { name: welcomeName });
+    toast(welcomeMessage);
+  } catch (error) {
+    console.error('No se pudo iniciar sesión:', error);
+    errEl.textContent = 'No se pudo iniciar sesión.';
+    errEl.style.display = 'block';
   }
-
-  errEl.style.display = 'none';
-  DB.setSession(profile);
-  syncSessionUi();
-  go('s-home');
-
-  const welcomeName = (profile.name || t('profile.guest')).split(' ')[0];
-  const welcomeMessage = profile.role === 'admin'
-    ? t('auth.adminWelcome', { name: welcomeName })
-    : t('auth.welcome', { name: welcomeName });
-  toast(welcomeMessage);
 }
 
-export function doLogout() {
-  DB.clearSession();
-  syncSessionUi();
-  go('s-splash');
-  toast(t('auth.sessionClosed'));
+export async function doLogout() {
+  try {
+    await DB.clearSession();
+    syncSessionUi();
+    go('s-splash');
+    toast(t('auth.sessionClosed'));
+  } catch (error) {
+    console.error('No se pudo cerrar la sesión:', error);
+    toast('No se pudo cerrar la sesión.');
+  }
 }
 
 export function initAuth() {
