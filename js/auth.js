@@ -17,6 +17,17 @@ import {
 
 const SUPABASE_CONFIG_ERROR = 'Falta configurar la anon key de Supabase.';
 
+function getAuthRedirectUrl() {
+  try {
+    const url = new URL(window.location.href);
+    url.search = '';
+    url.hash = '';
+    return url.toString();
+  } catch (error) {
+    return window.location.href;
+  }
+}
+
 function syncSessionUi() {
   updateHomeProfile();
   emitAppEvent('arraigo:session-changed', {
@@ -132,7 +143,9 @@ export async function requestPasswordRecovery() {
     return;
   }
 
-  const { error } = await client.auth.resetPasswordForEmail(email);
+  const { error } = await client.auth.resetPasswordForEmail(email, {
+    redirectTo: getAuthRedirectUrl()
+  });
   if (error) {
     toast(t('auth.recovery'));
     return;
@@ -182,6 +195,7 @@ export async function doReg() {
       email,
       password: pass,
       options: {
+        emailRedirectTo: getAuthRedirectUrl(),
         data: {
           name,
           age,
