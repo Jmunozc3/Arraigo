@@ -2,10 +2,10 @@
 // jobs.js — Pantalla de Empleo
 // ══════════════════════════════════
 
-import { DB } from './db.js';
-import { escapeHtml, emitAppEvent, openExternalUrl, toast } from './utils.js';
-import { JOBS_DATA } from './jobs-data.js';
-import { getIntlLocale, t, translateLocationLabel } from './i18n.js';
+import { DB } from './db.js?v=20260417204131';
+import { escapeHtml, emitAppEvent, openExternalUrl, toast } from './utils.js?v=20260417204131';
+import { JOBS_DATA } from './jobs-data.js?v=20260417204131';
+import { getIntlLocale, t, translateLocationLabel } from './i18n.js?v=20260417204131';
 
 let activeCategory = 'Todos';
 let searchTerm = '';
@@ -388,7 +388,8 @@ export async function toggleSavedJob(id, event) {
     const saved = await DB.toggleSavedJob(job);
     if (saved == null) {
       toast('Inicia sesión para guardar ofertas.');
-      if (typeof window.go === 'function') window.go('s-login');
+      if (typeof window.openLoginScreen === 'function') window.openLoginScreen();
+      else if (typeof window.go === 'function') window.go('s-login');
       return;
     }
 

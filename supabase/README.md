@@ -8,15 +8,24 @@ Este directorio deja la base lista para sacar la app de `localStorage` y pasarla
 2. Abre `SQL Editor`.
 3. Pega y ejecuta [schema.sql](./schema.sql).
 
-## 2. Crear tu primer admin
+## 2. Admin único
 
-Después de registrarte en la app una vez, ejecuta esto en el SQL Editor:
+El esquema deja un único administrador posible:
 
-```sql
-update public.profiles
-set role = 'admin'
-where email = 'tu-correo@ejemplo.com';
-```
+- Email admin fijo: `admin@arraigo.local`
+- Todos los demás usuarios se crean automáticamente con rol `user`
+
+Pasos:
+
+1. Ejecuta completo [schema.sql](./schema.sql).
+2. Registra en la app la cuenta `admin@arraigo.local`.
+3. Esa cuenta quedará como `admin` automáticamente.
+4. El resto de cuentas quedarán como `user`.
+
+Nota:
+
+- La contraseña del admin no se guarda en el frontend ni en este repo.
+- Defínela al crear la cuenta `admin@arraigo.local` o cámbiala luego desde `Auth > Users` en Supabase.
 
 ## 3. Qué guarda cada tabla
 

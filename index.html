@@ -467,7 +467,7 @@ button,input,select,textarea{font-family:var(--sf);outline:none;}
     <div style="font-size:40px;font-weight:700;color:#fff;letter-spacing:-1px;line-height:1.1;margin-bottom:14px;">Tu nueva vida<br/>en la España<br/><span style="color:#30D158;">rural</span></div>
     <div style="font-size:17px;color:rgba(255,255,255,0.65);letter-spacing:-0.3px;line-height:1.5;margin-bottom:36px;">Encuentra trabajo, vivienda y comunidad en los municipios que más te necesitan.</div>
     <button class="btn btn-filled btn-full btn-h50 fu fu1" onclick="go('s-onboard')">Comenzar</button>
-    <button class="btn btn-full btn-h50 fu fu2" style="background:rgba(255,255,255,0.12);color:#fff;margin-top:10px;backdrop-filter:blur(8px);" onclick="go('s-login')">Ya tengo cuenta</button>
+    <button class="btn btn-full btn-h50 fu fu2" style="background:rgba(255,255,255,0.12);color:#fff;margin-top:10px;backdrop-filter:blur(8px);" onclick="openLoginScreen()">Ya tengo cuenta</button>
   </div>
 </div>
 
@@ -479,7 +479,7 @@ button,input,select,textarea{font-family:var(--sf);outline:none;}
     <div class="nav-spacer"></div>
   </div>
   <div class="scroll">
-    <div style="padding-top:24px;">
+    <form id="login-form" style="padding-top:24px;" novalidate onsubmit="event.preventDefault();doLogin()">
       <div style="text-align:center;padding:0 24px 28px;" class="fu">
         <div style="width:72px;height:72px;background:rgba(0,122,255,0.1);border-radius:22px;margin:0 auto 16px;display:flex;align-items:center;justify-content:center;">
           <svg viewBox="0 0 24 24" width="36" height="36" fill="none"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" stroke="#007AFF" stroke-width="1.5" stroke-linecap="round"/><circle cx="12" cy="7" r="4" stroke="#007AFF" stroke-width="1.5"/></svg>
@@ -490,11 +490,11 @@ button,input,select,textarea{font-family:var(--sf);outline:none;}
       <div class="auth-error" id="login-error">Usuario o contraseña incorrectos.</div>
       <div class="ios-input-group fu fu1">
         <label>Correo electrónico</label>
-        <input class="ios-input" type="email" id="login-email" placeholder="ejemplo@correo.com"/>
+        <input class="ios-input" type="email" id="login-email" name="email" placeholder="ejemplo@correo.com" autocomplete="username" autocapitalize="none"/>
       </div>
       <div class="ios-input-group fu fu2">
         <label>Contraseña</label>
-        <input class="ios-input" type="password" id="login-pass" placeholder="Tu contraseña"/>
+        <input class="ios-input" type="password" id="login-pass" name="password" placeholder="Tu contraseña" autocomplete="current-password"/>
       </div>
       <div style="padding:4px 16px 20px;text-align:right;" class="fu fu2">
         <a href="#" style="color:var(--ios-blue);font-size:15px;" onclick="requestPasswordRecovery();return false;">¿Olvidaste tu contraseña?</a>
@@ -503,12 +503,12 @@ button,input,select,textarea{font-family:var(--sf);outline:none;}
         El rol de administrador se asigna desde Supabase.
       </div>
       <div style="padding:0 16px 12px;" class="fu fu3">
-        <button class="btn btn-filled btn-full btn-h50" onclick="doLogin()">Iniciar sesión</button>
+        <button class="btn btn-filled btn-full btn-h50" type="submit">Iniciar sesión</button>
       </div>
       <div style="text-align:center;padding:0 16px 40px;font-size:15px;color:var(--label2);" class="fu fu4">
         ¿No tienes cuenta? <a href="#" style="color:var(--ios-blue);" onclick="go('s-onboard');return false;">Crear cuenta</a>
       </div>
-    </div>
+    </form>
   </div>
 </div>
 
@@ -598,20 +598,20 @@ button,input,select,textarea{font-family:var(--sf);outline:none;}
     <div class="nav-spacer"></div>
   </div>
   <div class="scroll">
-    <div style="padding:16px 0 0;">
+    <form id="register-form" style="padding:16px 0 0;" novalidate onsubmit="event.preventDefault();doReg()">
       <div class="progress-bar"><div class="progress-fill" id="reg-bar"></div></div>
       <div style="padding:0 16px 20px;" class="fu">
         <div style="font-size:28px;font-weight:700;letter-spacing:-0.6px;color:var(--label);line-height:1.2;">Cuéntanos<br/>sobre ti</div>
         <div style="font-size:15px;color:var(--label2);margin-top:6px;letter-spacing:-0.2px;">Crea tu perfil para empezar tu arraigo.</div>
-        <button class="btn btn-gray btn-h36" style="margin-top:14px;padding:0 14px;font-size:14px;" onclick="openExperimentNotice()">
+        <button class="btn btn-gray btn-h36" type="button" style="margin-top:14px;padding:0 14px;font-size:14px;" onclick="openExperimentNotice()">
           <svg viewBox="0 0 24 24" width="16" height="16" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8"/><path d="M12 10v5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="12" cy="7" r="1.1" fill="currentColor"/></svg>
           Aviso del proyecto
         </button>
       </div>
       <div class="auth-error" id="reg-error"></div>
-      <div class="ios-input-group fu fu1"><label>Nombre completo</label><input class="ios-input" type="text" id="reg-name" placeholder="Juan Pérez" oninput="calcProg()"/></div>
-      <div class="ios-input-group fu fu1"><label>Correo electrónico</label><input class="ios-input" type="email" id="reg-email" placeholder="ejemplo@correo.com" oninput="calcProg()"/></div>
-      <div class="ios-input-group fu fu2"><label>Contraseña</label><input class="ios-input" type="password" id="reg-pass" placeholder="Mínimo 6 caracteres" oninput="calcProg()"/></div>
+      <div class="ios-input-group fu fu1"><label>Nombre completo</label><input class="ios-input" type="text" id="reg-name" name="name" placeholder="Juan Pérez" autocomplete="name" oninput="calcProg()"/></div>
+      <div class="ios-input-group fu fu1"><label>Correo electrónico</label><input class="ios-input" type="email" id="reg-email" name="email" placeholder="ejemplo@correo.com" autocomplete="username" autocapitalize="none" oninput="calcProg()"/></div>
+      <div class="ios-input-group fu fu2"><label>Contraseña</label><input class="ios-input" type="password" id="reg-pass" name="password" placeholder="Mínimo 8 caracteres" autocomplete="new-password" oninput="calcProg()"/></div>
       <div style="display:flex;gap:10px;margin:0 16px 16px;" class="fu fu2">
         <div style="flex:1;"><label style="display:block;font-size:13px;color:var(--label2);margin-bottom:6px;padding-left:4px;">Edad</label><input class="ios-input" type="number" id="reg-age" placeholder="25" style="width:100%;" oninput="calcProg()"/></div>
         <div style="flex:2;"><label style="display:block;font-size:13px;color:var(--label2);margin-bottom:6px;padding-left:4px;">Municipio</label><input class="ios-input" type="text" id="reg-town" placeholder="Tu localidad" style="width:100%;" oninput="calcProg()"/></div>
@@ -636,22 +636,22 @@ button,input,select,textarea{font-family:var(--sf);outline:none;}
               <div class="cell-title" id="reg-track-title" style="font-size:15px;">Compartir ubicación para análisis</div>
               <div class="cell-subtitle" id="reg-track-copy">Puedes decidir si quieres activar el seguimiento al crear tu cuenta. <a href="#" style="color:var(--ios-blue);text-decoration:none;" onclick="event.stopPropagation();openTrackingInfoNotice();return false;">Más información</a></div>
             </div>
-            <button class="toggle on" id="reg-track-toggle" onclick="event.stopPropagation();this.classList.toggle('on')"></button>
+            <button class="toggle on" type="button" id="reg-track-toggle" onclick="event.stopPropagation();this.classList.toggle('on')"></button>
           </div>
           <div class="cell" onclick="var t=document.getElementById('tog');t.classList.toggle('on');calcProg()">
             <div class="cell-content">
               <div class="cell-title" style="font-size:15px;">Términos y privacidad</div>
               <div class="cell-subtitle">Acepto los términos de Arraigo · <a href="#" style="color:var(--ios-blue);text-decoration:none;" onclick="event.stopPropagation();openPrivacy();return false;">Leer política</a></div>
             </div>
-            <button class="toggle" id="tog" onclick="event.stopPropagation();this.classList.toggle('on');calcProg()"></button>
+            <button class="toggle" type="button" id="tog" onclick="event.stopPropagation();this.classList.toggle('on');calcProg()"></button>
           </div>
         </div>
       </div>
       <div style="padding:20px 16px 40px;" class="fu fu5">
-        <button class="btn btn-filled btn-full btn-h50" onclick="doReg()">Crear mi cuenta</button>
-        <div style="text-align:center;margin-top:14px;font-size:15px;color:var(--label2);">¿Ya tienes cuenta? <a href="#" style="color:var(--ios-blue);" onclick="go('s-login');return false;">Iniciar sesión</a></div>
+        <button class="btn btn-filled btn-full btn-h50" type="submit">Crear mi cuenta</button>
+        <div style="text-align:center;margin-top:14px;font-size:15px;color:var(--label2);">¿Ya tienes cuenta? <a href="#" style="color:var(--ios-blue);" onclick="openLoginScreen();return false;">Iniciar sesión</a></div>
       </div>
-    </div>
+    </form>
   </div>
 </div>
 
@@ -1184,6 +1184,6 @@ button,input,select,textarea{font-family:var(--sf);outline:none;}
 </div><!-- /device -->
 
 <!-- Carga todos los módulos JS -->
-<script type="module" src="js/main.js"></script>
+<script type="module" src="js/main.js?v=20260417204131"></script>
 </body>
 </html>

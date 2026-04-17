@@ -121,7 +121,7 @@ const TRANSLATIONS = {
       termsTitle: 'Términos y privacidad',
       termsHtml: 'Acepto los términos de Arraigo · <a href="#" style="color:var(--ios-blue);text-decoration:none;" onclick="event.stopPropagation();openPrivacy();return false;">Leer política</a>',
       submit: 'Crear mi cuenta',
-      loginHtml: '¿Ya tienes cuenta? <a href="#" style="color:var(--ios-blue);" onclick="go(\'s-login\');return false;">Iniciar sesión</a>'
+      loginHtml: '¿Ya tienes cuenta? <a href="#" style="color:var(--ios-blue);" onclick="openLoginScreen();return false;">Iniciar sesión</a>'
     },
     home: {
       jobsCopy: 'Explorar ofertas',
@@ -573,7 +573,7 @@ const TRANSLATIONS = {
       termsTitle: 'Terms and privacy',
       termsHtml: 'I accept Arraigo terms · <a href="#" style="color:var(--ios-blue);text-decoration:none;" onclick="event.stopPropagation();openPrivacy();return false;">Read policy</a>',
       submit: 'Create my account',
-      loginHtml: 'Already have an account? <a href="#" style="color:var(--ios-blue);" onclick="go(\'s-login\');return false;">Sign in</a>'
+      loginHtml: 'Already have an account? <a href="#" style="color:var(--ios-blue);" onclick="openLoginScreen();return false;">Sign in</a>'
     },
     home: {
       jobsCopy: 'Browse openings',
@@ -936,7 +936,7 @@ const TRANSLATIONS = {
       termsTitle: 'Conditions et confidentialité',
       termsHtml: 'J’accepte les conditions d’Arraigo · <a href="#" style="color:var(--ios-blue);text-decoration:none;" onclick="event.stopPropagation();openPrivacy();return false;">Lire la politique</a>',
       submit: 'Créer mon compte',
-      loginHtml: 'Vous avez déjà un compte ? <a href="#" style="color:var(--ios-blue);" onclick="go(\'s-login\');return false;">Se connecter</a>'
+      loginHtml: 'Vous avez déjà un compte ? <a href="#" style="color:var(--ios-blue);" onclick="openLoginScreen();return false;">Se connecter</a>'
     },
     home: {
       jobsCopy: 'Voir les offres',
@@ -1260,7 +1260,7 @@ const TRANSLATIONS = {
       termsTitle: 'Bedingungen und Datenschutz',
       termsHtml: 'Ich akzeptiere die Bedingungen von Arraigo · <a href="#" style="color:var(--ios-blue);text-decoration:none;" onclick="event.stopPropagation();openPrivacy();return false;">Richtlinie lesen</a>',
       submit: 'Mein Konto erstellen',
-      loginHtml: 'Hast du schon ein Konto? <a href="#" style="color:var(--ios-blue);" onclick="go(\'s-login\');return false;">Anmelden</a>'
+      loginHtml: 'Hast du schon ein Konto? <a href="#" style="color:var(--ios-blue);" onclick="openLoginScreen();return false;">Anmelden</a>'
     },
     home: {
       jobsCopy: 'Stellen ansehen',
@@ -1584,7 +1584,7 @@ const TRANSLATIONS = {
       termsTitle: 'Termini e privacy',
       termsHtml: 'Accetto i termini di Arraigo · <a href="#" style="color:var(--ios-blue);text-decoration:none;" onclick="event.stopPropagation();openPrivacy();return false;">Leggi la policy</a>',
       submit: 'Crea il mio account',
-      loginHtml: 'Hai già un account? <a href="#" style="color:var(--ios-blue);" onclick="go(\'s-login\');return false;">Accedi</a>'
+      loginHtml: 'Hai già un account? <a href="#" style="color:var(--ios-blue);" onclick="openLoginScreen();return false;">Accedi</a>'
     },
     home: {
       jobsCopy: 'Esplora offerte',
@@ -1992,7 +1992,7 @@ function applyLoginTranslations() {
 
   setTextContent(screen.querySelector('.nav-title'), t('login.nav'));
 
-  const body = screen.querySelector('.scroll > div');
+  const body = screen.querySelector('#login-form') || screen.querySelector('.scroll > div');
   if (body?.children?.length >= 8) {
     const hero = body.children[0];
     setTextContent(hero.children[1], t('login.title'));
@@ -2034,7 +2034,7 @@ function applyRegisterTranslations() {
   setTextContent(nav?.querySelector('.nav-title'), t('register.nav'));
   setTextContent(nav?.querySelectorAll('.nav-btn')[1], t('register.skip'));
 
-  const body = screen.querySelector('.scroll > div');
+  const body = screen.querySelector('#register-form') || screen.querySelector('.scroll > div');
   if (body?.children?.length >= 13) {
     const hero = body.children[1];
     setInnerHtml(hero.children[0], t('register.titleHtml'));

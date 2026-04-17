@@ -3,8 +3,8 @@
 // ══════════════════════════════════
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import { emitAppEvent } from './utils.js';
-import { SUPABASE_ANON_KEY, SUPABASE_URL, hasSupabaseConfig } from './supabase-config.js';
+import { emitAppEvent } from './utils.js?v=20260417204131';
+import { SUPABASE_ANON_KEY, SUPABASE_URL, hasSupabaseConfig } from './supabase-config.js?v=20260417204131';
 
 const DEFAULT_NOTIFICATION_META = {
   examplesSeeded: true,

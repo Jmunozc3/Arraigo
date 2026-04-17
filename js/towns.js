@@ -2,9 +2,9 @@
 // towns.js — Pantalla de Pueblos (mapa Leaflet)
 // ══════════════════════════════════
 
-import { DB } from './db.js';
-import { escapeHtml, emitAppEvent, openExternalUrl, toast } from './utils.js';
-import { getIntlLocale, getLanguage, t, translateRegionValue } from './i18n.js';
+import { DB } from './db.js?v=20260417204131';
+import { escapeHtml, emitAppEvent, openExternalUrl, toast } from './utils.js?v=20260417204131';
+import { getIntlLocale, getLanguage, t, translateRegionValue } from './i18n.js?v=20260417204131';
 
 const POPULATION_LIMIT = 10000;
 const MAP_PICK_RADIUS_PX = 18;
@@ -258,9 +258,9 @@ async function ensureTownsLoaded() {
   setTownStatus(t('towns.loading'));
 
   townsPromise = Promise.all([
-    import('../data/municipios-spain-slim.js'),
-    import('../data/municipios-population-2025.js'),
-    import('../data/municipios-enrichment.js')
+    import('../data/municipios-spain-slim.js?v=20260417204131'),
+    import('../data/municipios-population-2025.js?v=20260417204131'),
+    import('../data/municipios-enrichment.js?v=20260417204131')
   ])
     .then(([municipalitiesModule, populationModule, enrichmentModule]) => {
       const populationMap = populationModule.MUNICIPAL_POPULATION_2025 || {};
@@ -564,7 +564,8 @@ export async function toggleSavedTown(id = currentTownId, event) {
     const saved = await DB.toggleSavedTown(town);
     if (saved == null) {
       toast('Inicia sesión para guardar municipios.');
-      if (typeof window.go === 'function') window.go('s-login');
+      if (typeof window.openLoginScreen === 'function') window.openLoginScreen();
+      else if (typeof window.go === 'function') window.go('s-login');
       return;
     }
 

@@ -2,9 +2,9 @@
 // home.js — Inicio, accesos rápidos y noticias
 // ══════════════════════════════════
 
-import { DB } from './db.js';
-import { escapeHtml, openExternalUrl, toast } from './utils.js';
-import { getIntlLocale, t } from './i18n.js';
+import { DB } from './db.js?v=20260417204131';
+import { escapeHtml, openExternalUrl, toast } from './utils.js?v=20260417204131';
+import { getIntlLocale, t } from './i18n.js?v=20260417204131';
 
 const SEPE_URL = 'https://www.sepe.es/HomeSepe/';
 const NEWS_SEARCH_URL = 'https://news.google.com/search?q=empleo+rural+OR+despoblacion+OR+pueblos+Espana&hl=es&gl=ES&ceid=ES:es';

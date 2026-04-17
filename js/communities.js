@@ -2,9 +2,9 @@
 // communities.js — Comunidades y asociaciones
 // ══════════════════════════════════
 
-import { DB } from './db.js';
-import { emitAppEvent, escapeHtml, openExternalUrl, toast } from './utils.js';
-import { getIntlLocale, t } from './i18n.js';
+import { DB } from './db.js?v=20260417204131';
+import { emitAppEvent, escapeHtml, openExternalUrl, toast } from './utils.js?v=20260417204131';
+import { getIntlLocale, t } from './i18n.js?v=20260417204131';
 
 let communityImageDraft = '';
 
@@ -196,7 +196,8 @@ export async function saveCommunity() {
   const session = DB.getSession();
   if (!session) {
     toast(t('communities.loginRequired'));
-    if (typeof window.go === 'function') window.go('s-login');
+    if (typeof window.openLoginScreen === 'function') window.openLoginScreen();
+    else if (typeof window.go === 'function') window.go('s-login');
     return;
   }
 

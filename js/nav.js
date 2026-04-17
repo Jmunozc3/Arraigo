@@ -2,7 +2,7 @@
 // nav.js — Navegación entre pantallas
 // ══════════════════════════════════
 
-import { initMap } from './towns.js';
+import { initMap } from './towns.js?v=20260417204131';
 
 let cur = 's-splash';
 

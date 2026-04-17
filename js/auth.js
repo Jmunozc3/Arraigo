@@ -2,10 +2,10 @@
 // auth.js — Autenticación con Supabase Auth
 // ══════════════════════════════════
 
-import { DB } from './db.js';
-import { emitAppEvent, toast } from './utils.js';
-import { go } from './nav.js';
-import { updateHomeProfile } from './profile.js';
+import { DB } from './db.js?v=20260417204131';
+import { emitAppEvent, toast } from './utils.js?v=20260417204131';
+import { go } from './nav.js?v=20260417204131';
+import { updateHomeProfile } from './profile.js?v=20260417204131';
 import {
   SUPPORTED_LANGUAGES,
   getLanguage,
@@ -13,7 +13,7 @@ import {
   normalizeStatusValue,
   setLanguage,
   t
-} from './i18n.js';
+} from './i18n.js?v=20260417204131';
 
 const SUPABASE_CONFIG_ERROR = 'Falta configurar la anon key de Supabase.';
 
@@ -43,6 +43,47 @@ function getLoginErrorElement() {
   return document.getElementById('login-error');
 }
 
+function buildMissingFieldsMessage(baseMessage, missingLabels = []) {
+  if (!missingLabels.length) return baseMessage;
+  return `${baseMessage} (${missingLabels.join(', ')})`;
+}
+
+function hideAuthError(errorElement) {
+  if (!errorElement) return;
+  errorElement.textContent = '';
+  errorElement.style.display = 'none';
+}
+
+function isScreenActive(screenId) {
+  return document.getElementById(screenId)?.classList.contains('active') ?? false;
+}
+
+function focusAuthField(fieldId) {
+  window.setTimeout(() => {
+    document.getElementById(fieldId)?.focus();
+  }, 80);
+}
+
+function getTextInputValue(fieldId) {
+  const field = document.getElementById(fieldId);
+  if (!(field instanceof HTMLInputElement || field instanceof HTMLTextAreaElement)) return '';
+  return String(field.value || field.getAttribute('value') || '').trim();
+}
+
+async function commitActiveAuthField(screenId) {
+  const active = document.activeElement;
+  if (!(active instanceof HTMLElement) || !active.closest(`#${screenId}`)) return;
+
+  if (
+    active instanceof HTMLInputElement
+    || active instanceof HTMLTextAreaElement
+    || active instanceof HTMLSelectElement
+  ) {
+    active.blur();
+    await new Promise(resolve => window.requestAnimationFrame(() => window.requestAnimationFrame(resolve)));
+  }
+}
+
 function syncLanguageSelectionUi(language = getLanguage()) {
   SUPPORTED_LANGUAGES.forEach(code => {
     const cell = document.getElementById(`lc-${code}`);
@@ -57,10 +98,46 @@ function syncLanguageSelectionUi(language = getLanguage()) {
 }
 
 function clearAuthErrors() {
-  [getRegisterErrorElement(), getLoginErrorElement()].forEach(errorElement => {
-    if (!errorElement) return;
-    errorElement.textContent = '';
-    errorElement.style.display = 'none';
+  [getRegisterErrorElement(), getLoginErrorElement()].forEach(hideAuthError);
+}
+
+function clearRegisterError() {
+  hideAuthError(getRegisterErrorElement());
+}
+
+function clearLoginError() {
+  hideAuthError(getLoginErrorElement());
+}
+
+function bindAuthFieldListeners() {
+  const loginScreen = document.getElementById('s-login');
+  const registerScreen = document.getElementById('s-register');
+
+  loginScreen?.addEventListener('input', clearLoginError);
+  registerScreen?.addEventListener('input', clearRegisterError);
+  registerScreen?.addEventListener('change', clearRegisterError);
+}
+
+function bindAuthKeyboardSubmit() {
+  document.addEventListener('keydown', event => {
+    if (event.key !== 'Enter' || event.shiftKey || event.isComposing) return;
+
+    const target = event.target;
+    if (!(target instanceof HTMLElement)) return;
+
+    const tagName = target.tagName;
+    if (tagName !== 'INPUT' && tagName !== 'SELECT') return;
+
+    if (isScreenActive('s-login') && target.closest('#s-login')) {
+      event.preventDefault();
+      doLogin();
+      return;
+    }
+
+    if (isScreenActive('s-register') && target.closest('#s-register')) {
+      event.preventDefault();
+      doReg();
+    }
   });
 }
 
@@ -78,10 +155,23 @@ function getClientOrShowError(targetErrorElement) {
 }
 
 function getAuthMessage(error, fallbackKey) {
-  const message = String(error?.message || '').toLowerCase();
+  const rawMessage = String(error?.message || '').trim();
+  const message = rawMessage.toLowerCase();
   if (message.includes('already registered')) return t('auth.emailExists');
   if (message.includes('invalid login credentials')) return t('auth.invalid');
   if (message.includes('email not confirmed')) return 'Confirma tu correo antes de iniciar sesión.';
+  if (message.includes('database error saving new user')) {
+    return 'Supabase no pudo guardar el usuario. Suele pasar cuando falta ejecutar completo `supabase/schema.sql` o falla el trigger de `profiles`.';
+  }
+  if (message.includes('signups not allowed')) {
+    return 'El registro por email está desactivado en Supabase.';
+  }
+  if (message.includes('invalid email')) {
+    return 'El correo no es válido.';
+  }
+  if (rawMessage) {
+    return `${t(fallbackKey)} Detalle: ${rawMessage}`;
+  }
   return t(fallbackKey);
 }
 
@@ -129,9 +219,17 @@ export function closeTrackingInfoNotice() {
 }
 
 export function openRegisterScreen() {
+  clearAuthErrors();
   go('s-register');
   calcProg();
   openExperimentNotice();
+  focusAuthField('reg-name');
+}
+
+export function openLoginScreen() {
+  clearAuthErrors();
+  go('s-login');
+  focusAuthField('login-email');
 }
 
 export async function requestPasswordRecovery() {
@@ -155,13 +253,22 @@ export async function requestPasswordRecovery() {
 }
 
 export async function doReg() {
-  const name = (document.getElementById('reg-name')?.value || '').trim();
-  const email = (document.getElementById('reg-email')?.value || '').trim().toLowerCase();
-  const pass = (document.getElementById('reg-pass')?.value || '').trim();
-  const errEl = getRegisterErrorElement();
+  if (!isScreenActive('s-register')) return;
+  await commitActiveAuthField('s-register');
 
-  if (!name || !email || !pass) {
-    errEl.textContent = t('auth.required');
+  const name = getTextInputValue('reg-name');
+  const email = getTextInputValue('reg-email').toLowerCase();
+  const pass = getTextInputValue('reg-pass');
+  const errEl = getRegisterErrorElement();
+  clearRegisterError();
+  const missingFields = [];
+
+  if (!name) missingFields.push(t('register.nameLabel'));
+  if (!email) missingFields.push(t('register.emailLabel'));
+  if (!pass) missingFields.push(t('register.passwordLabel'));
+
+  if (missingFields.length) {
+    errEl.textContent = buildMissingFieldsMessage(t('auth.required'), missingFields);
     errEl.style.display = 'block';
     return;
   }
@@ -226,7 +333,9 @@ export async function doReg() {
     syncSessionUi();
 
     if (!data?.session) {
-      go('s-login');
+      const loginEmail = document.getElementById('login-email');
+      if (loginEmail) loginEmail.value = email;
+      openLoginScreen();
       toast('Cuenta creada. Revisa tu correo para confirmar el acceso si tu proyecto lo requiere.');
       return;
     }
@@ -243,12 +352,20 @@ export async function doReg() {
 }
 
 export async function doLogin() {
-  const email = (document.getElementById('login-email')?.value || '').trim().toLowerCase();
-  const pass = (document.getElementById('login-pass')?.value || '').trim();
-  const errEl = getLoginErrorElement();
+  if (!isScreenActive('s-login')) return;
+  await commitActiveAuthField('s-login');
 
-  if (!email || !pass) {
-    errEl.textContent = t('auth.loginRequired');
+  const email = getTextInputValue('login-email').toLowerCase();
+  const pass = getTextInputValue('login-pass');
+  const errEl = getLoginErrorElement();
+  clearLoginError();
+  const missingFields = [];
+
+  if (!email) missingFields.push(t('login.emailLabel'));
+  if (!pass) missingFields.push(t('login.passwordLabel'));
+
+  if (missingFields.length) {
+    errEl.textContent = buildMissingFieldsMessage(t('auth.loginRequired'), missingFields);
     errEl.style.display = 'block';
     return;
   }
@@ -301,6 +418,8 @@ export async function doLogout() {
 export function initAuth() {
   syncLanguageSelectionUi();
   clearAuthErrors();
+  bindAuthFieldListeners();
+  bindAuthKeyboardSubmit();
 
   window.addEventListener('arraigo:language-changed', () => {
     syncLanguageSelectionUi();
@@ -316,6 +435,7 @@ window.closeExperimentNotice = closeExperimentNotice;
 window.openTrackingInfoNotice = openTrackingInfoNotice;
 window.closeTrackingInfoNotice = closeTrackingInfoNotice;
 window.openRegisterScreen = openRegisterScreen;
+window.openLoginScreen = openLoginScreen;
 window.requestPasswordRecovery = requestPasswordRecovery;
 window.doReg = doReg;
 window.doLogin = doLogin;

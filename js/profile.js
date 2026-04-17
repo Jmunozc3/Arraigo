@@ -2,9 +2,9 @@
 // profile.js — Gestión de perfil de usuario
 // ══════════════════════════════════
 
-import { DB } from './db.js';
-import { setValue, setSelect, toast } from './utils.js';
-import { go } from './nav.js';
+import { DB } from './db.js?v=20260417204131';
+import { setValue, setSelect, toast } from './utils.js?v=20260417204131';
+import { go } from './nav.js?v=20260417204131';
 import {
   getIntlLocale,
   getLanguage,
@@ -13,7 +13,7 @@ import {
   t,
   translateRegionValue,
   translateStatusValue
-} from './i18n.js';
+} from './i18n.js?v=20260417204131';
 
 const POLICY_SECTION_STYLE = 'background:rgba(116,116,128,0.08);border-radius:16px;padding:16px;';
 const POLICY_TITLE_STYLE = 'font-size:15px;font-weight:700;color:var(--label);letter-spacing:-0.2px;';
@@ -288,7 +288,8 @@ export function updateHomeProfile() {
 export function openEditProfile() {
   const session = DB.getSession();
   if (!session) {
-    go('s-login');
+    if (typeof window.openLoginScreen === 'function') window.openLoginScreen();
+    else go('s-login');
     return;
   }
 

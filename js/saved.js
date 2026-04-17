@@ -2,9 +2,9 @@
 // saved.js — Pantalla de Guardados
 // ══════════════════════════════════
 
-import { DB } from './db.js';
-import { escapeHtml } from './utils.js';
-import { getIntlLocale, t, translateLocationLabel, translateRegionValue } from './i18n.js';
+import { DB } from './db.js?v=20260417204131';
+import { escapeHtml } from './utils.js?v=20260417204131';
+import { getIntlLocale, t, translateLocationLabel, translateRegionValue } from './i18n.js?v=20260417204131';
 
 let activePanelId = 'sp-jobs';
 

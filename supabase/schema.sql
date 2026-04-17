@@ -201,6 +201,10 @@ create table if not exists public.location_events (
 create unique index if not exists profiles_email_lower_uidx
   on public.profiles (lower(email));
 
+create unique index if not exists profiles_single_admin_uidx
+  on public.profiles (role)
+  where role = 'admin';
+
 create unique index if not exists saved_jobs_user_job_uidx
   on public.saved_jobs (user_id, job_id)
   where job_id is not null;
@@ -268,6 +272,14 @@ create index if not exists location_events_user_captured_idx
 
 create index if not exists location_events_captured_idx
   on public.location_events (captured_at desc);
+
+create or replace function public.primary_admin_email()
+returns text
+language sql
+immutable
+as $$
+  select 'admin@arraigo.local'::text;
+$$;
 
 create or replace function public.set_updated_at()
 returns trigger
@@ -420,6 +432,23 @@ begin
 end;
 $$;
 
+create or replace function public.normalize_profile_role()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  new.role := case
+    when lower(coalesce(new.email, '')) = lower(public.primary_admin_email())
+      then 'admin'::public.app_role
+    else 'user'::public.app_role
+  end;
+
+  return new;
+end;
+$$;
+
 create or replace function public.handle_new_user()
 returns trigger
 language plpgsql
@@ -442,6 +471,7 @@ begin
     country,
     status,
     avatar,
+    role,
     tracking_enabled,
     additional_profile,
     privacy_accepted_at
@@ -460,6 +490,10 @@ begin
     nullif(meta->>'country', ''),
     nullif(meta->>'status', ''),
     nullif(coalesce(meta->>'avatar', meta->>'avatar_url'), ''),
+    case
+      when lower(coalesce(new.email, '')) = lower(public.primary_admin_email()) then 'admin'::public.app_role
+      else 'user'::public.app_role
+    end,
     case
       when meta ? 'tracking_enabled' then coalesce((meta->>'tracking_enabled')::boolean, true)
       else true
@@ -503,14 +537,27 @@ as $$
     from public.profiles
     where id = auth.uid()
       and role = 'admin'
+      and lower(email) = lower(public.primary_admin_email())
   );
 $$;
+
+update public.profiles
+set role = case
+  when lower(email) = lower(public.primary_admin_email()) then 'admin'::public.app_role
+  else 'user'::public.app_role
+end;
 
 drop trigger if exists profiles_set_updated_at on public.profiles;
 create trigger profiles_set_updated_at
 before update on public.profiles
 for each row
 execute function public.set_updated_at();
+
+drop trigger if exists profiles_normalize_role on public.profiles;
+create trigger profiles_normalize_role
+before insert or update of email, role on public.profiles
+for each row
+execute function public.normalize_profile_role();
 
 drop trigger if exists jobs_set_updated_at on public.jobs;
 create trigger jobs_set_updated_at

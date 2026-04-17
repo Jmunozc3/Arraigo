@@ -2,9 +2,9 @@
 // location.js — Seguimiento estructurado de ubicación
 // ══════════════════════════════════
 
-import { DB } from './db.js';
-import { emitAppEvent, toast } from './utils.js';
-import { t } from './i18n.js';
+import { DB } from './db.js?v=20260417204131';
+import { emitAppEvent, toast } from './utils.js?v=20260417204131';
+import { t } from './i18n.js?v=20260417204131';
 
 let watchId = null;
 let nightlyTimer = null;

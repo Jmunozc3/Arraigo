@@ -2,10 +2,10 @@
 // admin.js — Visualización de ubicaciones para testing
 // ══════════════════════════════════
 
-import { DB } from './db.js';
-import { resolveMunicipalityFromCoordinates } from './geo.js';
-import { escapeHtml, toast } from './utils.js';
-import { getIntlLocale, t, translateRegionValue } from './i18n.js';
+import { DB } from './db.js?v=20260417204131';
+import { resolveMunicipalityFromCoordinates } from './geo.js?v=20260417204131';
+import { escapeHtml, toast } from './utils.js?v=20260417204131';
+import { getIntlLocale, t, translateRegionValue } from './i18n.js?v=20260417204131';
 
 let adminMap = null;
 let adminLayer = null;
