@@ -74,18 +74,22 @@ button,input,select,textarea{font-family:var(--sf);outline:none;}
 .nav-spacer{width:34px;}
 .home-nav{justify-content:flex-end;}
 .home-brand{
-  position:absolute;left:50%;bottom:10px;transform:translateX(-50%);
-  display:grid;grid-template-columns:72px auto 72px;align-items:center;column-gap:12px;
+  position:absolute;left:16px;right:58px;bottom:10px;
+  display:grid;grid-template-columns:58px minmax(48px,1fr) auto;align-items:center;column-gap:10px;
   pointer-events:none;
 }
 .home-brand-logo{
-  height:32px;width:auto;display:block;object-fit:contain;flex-shrink:0;
+  width:auto;display:block;object-fit:contain;flex-shrink:0;
 }
-.home-brand-logo-left{justify-self:end;}
-.home-brand-logo-right{justify-self:start;}
+.home-brand-logo-left{height:28px;max-width:58px;justify-self:end;}
+.home-brand-partners{
+  display:flex;align-items:center;justify-content:flex-end;gap:8px;min-width:0;
+}
+.home-brand-logo-nebrija{height:20px;max-width:86px;}
+.home-brand-logo-community{height:32px;max-width:26px;}
 .home-brand-title{
-  font-size:18px;font-weight:700;letter-spacing:-0.5px;color:var(--ios-blue);
-  line-height:1;text-align:center;white-space:nowrap;
+  font-size:17px;font-weight:700;letter-spacing:-0.3px;color:var(--ios-blue);
+  line-height:1;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
 }
 
 /* TAB BAR */
@@ -499,9 +503,6 @@ button,input,select,textarea{font-family:var(--sf);outline:none;}
       <div style="padding:4px 16px 20px;text-align:right;" class="fu fu2">
         <a href="#" style="color:var(--ios-blue);font-size:15px;" onclick="requestPasswordRecovery();return false;">¿Olvidaste tu contraseña?</a>
       </div>
-      <div style="margin:0 16px 16px;background:rgba(0,122,255,0.06);border-radius:14px;padding:12px 14px;font-size:13px;color:var(--label2);line-height:1.5;" class="fu fu2">
-        El rol de administrador se asigna desde Supabase.
-      </div>
       <div style="padding:0 16px 12px;" class="fu fu3">
         <button class="btn btn-filled btn-full btn-h50" type="submit">Iniciar sesión</button>
       </div>
@@ -616,6 +617,9 @@ button,input,select,textarea{font-family:var(--sf);outline:none;}
         <div style="flex:1;"><label style="display:block;font-size:13px;color:var(--label2);margin-bottom:6px;padding-left:4px;">Edad</label><input class="ios-input" type="number" id="reg-age" placeholder="25" style="width:100%;" oninput="calcProg()"/></div>
         <div style="flex:2;"><label style="display:block;font-size:13px;color:var(--label2);margin-bottom:6px;padding-left:4px;">Municipio</label><input class="ios-input" type="text" id="reg-town" placeholder="Tu localidad" style="width:100%;" oninput="calcProg()"/></div>
       </div>
+      <div class="ios-input-group fu fu2"><label>Género</label>
+        <select class="ios-select ios-input" id="reg-gender" onchange="calcProg()"><option value="" disabled selected>Selecciona</option><option value="male">Masculino</option><option value="female">Femenino</option><option value="other">Otros</option></select>
+      </div>
       <div class="ios-input-group fu fu2"><label>Teléfono</label>
         <div style="display:flex;gap:8px;">
           <select class="ios-select" style="width:90px;"><option>+34</option><option>+1</option><option>+54</option><option>+57</option></select>
@@ -658,10 +662,13 @@ button,input,select,textarea{font-family:var(--sf);outline:none;}
 <!-- ══════ HOME ══════ -->
 <div class="screen" id="s-home">
   <div class="nav-bar home-nav" style="padding-top:64px;">
-    <div class="home-brand" aria-label="Arraigo Comunidad de Madrid">
+    <div class="home-brand" aria-label="Arraigo, Universidad Nebrija y Comunidad de Madrid">
       <img class="home-brand-logo home-brand-logo-left" src="Logo_Proyecto_Arraigo copia.png" alt="Logo de Arraigo"/>
       <span class="home-brand-title">Arraigo</span>
-      <img class="home-brand-logo home-brand-logo-right" src="Logotipo_del_Gobierno_de_la_Comunidad_de_Madrid.svg.png" alt="Logo de la Comunidad de Madrid"/>
+      <div class="home-brand-partners" aria-label="Entidades colaboradoras">
+        <img class="home-brand-logo home-brand-logo-nebrija" src="logo-nebrija.png.avif" alt="Logo de la Universidad Nebrija"/>
+        <img class="home-brand-logo home-brand-logo-community" src="Logotipo_del_Gobierno_de_la_Comunidad_de_Madrid.svg.png" alt="Logo de la Comunidad de Madrid"/>
+      </div>
     </div>
     <div style="display:flex;align-items:center;gap:8px;">
       <button style="width:34px;height:34px;border-radius:50%;background:rgba(116,116,128,0.12);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;position:relative;" onclick="openNotifications()">
@@ -754,6 +761,9 @@ button,input,select,textarea{font-family:var(--sf);outline:none;}
     <div class="group-label" style="padding:0 32px 6px;">INFORMACIÓN PERSONAL</div>
     <div class="ios-input-group"><label>Nombre completo</label><input class="ios-input" type="text" id="ep-name" placeholder="Tu nombre"/></div>
     <div class="ios-input-group"><label>Edad</label><input class="ios-input" type="number" id="ep-age" placeholder="25"/></div>
+    <div class="ios-input-group"><label>Género</label>
+      <select class="ios-select ios-input" id="ep-gender"><option value="" disabled selected>Selecciona</option><option value="male">Masculino</option><option value="female">Femenino</option><option value="other">Otros</option></select>
+    </div>
     <div class="ios-input-group"><label>Correo electrónico</label><input class="ios-input" type="email" id="ep-email" placeholder="tu@correo.com"/></div>
     <div class="ios-input-group"><label>Teléfono</label><input class="ios-input" type="tel" id="ep-phone" placeholder="+34 600 000 000"/></div>
     <div class="ios-input-group"><label>Municipio actual</label><input class="ios-input" type="text" id="ep-town" placeholder="Tu localidad"/></div>
@@ -1171,7 +1181,7 @@ button,input,select,textarea{font-family:var(--sf);outline:none;}
   <div style="background:var(--cell-bg);border-radius:28px 28px 0 0;width:100%;max-height:82%;display:flex;flex-direction:column;box-shadow:0 -8px 40px rgba(0,0,0,0.2);">
     <div style="display:flex;justify-content:center;padding:12px 0 4px;"><div style="width:36px;height:4px;background:var(--ios-gray4);border-radius:99px;"></div></div>
     <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 20px 14px;border-bottom:0.5px solid var(--sep);">
-      <div style="font-size:17px;font-weight:700;letter-spacing:-0.4px;">Política de privacidad</div>
+      <div style="font-size:17px;font-weight:700;letter-spacing:-0.4px;">Cláusula de protección de datos</div>
       <button onclick="closePrivacy()" style="width:30px;height:30px;border-radius:50%;background:rgba(116,116,128,0.15);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;"><svg viewBox="0 0 24 24" width="14" height="14" fill="none"><path d="M18 6L6 18M6 6l12 12" stroke="#8E8E93" stroke-width="2.2" stroke-linecap="round"/></svg></button>
     </div>
     <div style="overflow-y:auto;padding:20px 20px 36px;flex:1;-webkit-overflow-scrolling:touch;">

@@ -19,6 +19,7 @@ const INTL_LOCALES = {
 };
 
 const STATUS_VALUES = ['unemployed', 'seeking', 'employed', 'self_employed', 'student'];
+const GENDER_VALUES = ['male', 'female', 'other'];
 const REGION_VALUES = [
   'andalucia',
   'aragon',
@@ -85,7 +86,6 @@ const TRANSLATIONS = {
       passwordLabel: 'Contraseña',
       passwordPlaceholder: 'Tu contraseña',
       forgot: '¿Olvidaste tu contraseña?',
-      adminHtml: 'El rol de administrador se asigna desde Supabase.',
       submit: 'Iniciar sesión',
       signupHtml: '¿No tienes cuenta? <a href="#" style="color:var(--ios-blue);" onclick="go(\'s-onboard\');return false;">Crear cuenta</a>'
     },
@@ -108,6 +108,7 @@ const TRANSLATIONS = {
       passwordPlaceholder: 'Mínimo 8 caracteres',
       ageLabel: 'Edad',
       agePlaceholder: '25',
+      genderLabel: 'Género',
       townLabel: 'Municipio',
       townPlaceholder: 'Tu localidad',
       phoneLabel: 'Teléfono',
@@ -137,7 +138,7 @@ const TRANSLATIONS = {
       adminStatus: 'Visualización y control',
       updated: 'Perfil actualizado',
       photoUpdated: 'Foto actualizada',
-      privacyAccepted: 'Política de privacidad aceptada'
+      privacyAccepted: 'Cláusula de protección de datos aceptada'
     },
     editProfile: {
       nav: 'Editar perfil',
@@ -424,7 +425,7 @@ const TRANSLATIONS = {
       button: 'Entendido'
     },
     privacy: {
-      title: 'Política de privacidad',
+      title: 'Cláusula de protección de datos',
       button: 'Entendido y acepto'
     },
     status: {
@@ -433,6 +434,11 @@ const TRANSLATIONS = {
       employed: 'Trabajando',
       self_employed: 'Autónomo/a',
       student: 'Estudiante'
+    },
+    gender: {
+      male: 'Masculino',
+      female: 'Femenino',
+      other: 'Otros'
     },
     regions: {
       andalucia: 'Andalucía',
@@ -539,7 +545,6 @@ const TRANSLATIONS = {
       passwordLabel: 'Password',
       passwordPlaceholder: 'Your password',
       forgot: 'Forgot your password?',
-      adminHtml: 'The administrator role is assigned from Supabase.',
       submit: 'Sign in',
       signupHtml: 'Don’t have an account? <a href="#" style="color:var(--ios-blue);" onclick="go(\'s-onboard\');return false;">Create one</a>'
     },
@@ -562,6 +567,7 @@ const TRANSLATIONS = {
       passwordPlaceholder: 'At least 8 characters',
       ageLabel: 'Age',
       agePlaceholder: '25',
+      genderLabel: 'Gender',
       townLabel: 'Town',
       townPlaceholder: 'Your town',
       phoneLabel: 'Phone',
@@ -811,6 +817,11 @@ const TRANSLATIONS = {
       self_employed: 'Self-employed',
       student: 'Student'
     },
+    gender: {
+      male: 'Male',
+      female: 'Female',
+      other: 'Other'
+    },
     regions: {
       andalucia: 'Andalusia',
       aragon: 'Aragon',
@@ -902,7 +913,6 @@ const TRANSLATIONS = {
       passwordLabel: 'Mot de passe',
       passwordPlaceholder: 'Votre mot de passe',
       forgot: 'Mot de passe oublié ?',
-      adminHtml: 'Le rôle administrateur est attribué depuis Supabase.',
       submit: 'Se connecter',
       signupHtml: 'Vous n’avez pas de compte ? <a href="#" style="color:var(--ios-blue);" onclick="go(\'s-onboard\');return false;">Créer un compte</a>'
     },
@@ -925,6 +935,7 @@ const TRANSLATIONS = {
       passwordPlaceholder: 'Au moins 8 caractères',
       ageLabel: 'Âge',
       agePlaceholder: '25',
+      genderLabel: 'Genre',
       townLabel: 'Commune',
       townPlaceholder: 'Votre commune',
       phoneLabel: 'Téléphone',
@@ -1135,6 +1146,11 @@ const TRANSLATIONS = {
       self_employed: 'Indépendant/e',
       student: 'Étudiant/e'
     },
+    gender: {
+      male: 'Masculin',
+      female: 'Féminin',
+      other: 'Autre'
+    },
     regions: {
       andalucia: 'Andalousie',
       aragon: 'Aragon',
@@ -1226,7 +1242,6 @@ const TRANSLATIONS = {
       passwordLabel: 'Passwort',
       passwordPlaceholder: 'Dein Passwort',
       forgot: 'Passwort vergessen?',
-      adminHtml: 'Die Administratorrolle wird in Supabase vergeben.',
       submit: 'Anmelden',
       signupHtml: 'Noch kein Konto? <a href="#" style="color:var(--ios-blue);" onclick="go(\'s-onboard\');return false;">Konto erstellen</a>'
     },
@@ -1249,6 +1264,7 @@ const TRANSLATIONS = {
       passwordPlaceholder: 'Mindestens 8 Zeichen',
       ageLabel: 'Alter',
       agePlaceholder: '25',
+      genderLabel: 'Geschlecht',
       townLabel: 'Gemeinde',
       townPlaceholder: 'Dein Ort',
       phoneLabel: 'Telefon',
@@ -1459,6 +1475,11 @@ const TRANSLATIONS = {
       self_employed: 'Selbstständig',
       student: 'Studierend'
     },
+    gender: {
+      male: 'Männlich',
+      female: 'Weiblich',
+      other: 'Andere'
+    },
     regions: {
       andalucia: 'Andalusien',
       aragon: 'Aragonien',
@@ -1550,7 +1571,6 @@ const TRANSLATIONS = {
       passwordLabel: 'Password',
       passwordPlaceholder: 'La tua password',
       forgot: 'Hai dimenticato la password?',
-      adminHtml: 'Il ruolo di amministratore viene assegnato da Supabase.',
       submit: 'Accedi',
       signupHtml: 'Non hai un account? <a href="#" style="color:var(--ios-blue);" onclick="go(\'s-onboard\');return false;">Creane uno</a>'
     },
@@ -1573,6 +1593,7 @@ const TRANSLATIONS = {
       passwordPlaceholder: 'Almeno 8 caratteri',
       ageLabel: 'Età',
       agePlaceholder: '25',
+      genderLabel: 'Genere',
       townLabel: 'Comune',
       townPlaceholder: 'Il tuo comune',
       phoneLabel: 'Telefono',
@@ -1783,6 +1804,11 @@ const TRANSLATIONS = {
       self_employed: 'Autonomo/a',
       student: 'Studente'
     },
+    gender: {
+      male: 'Maschile',
+      female: 'Femminile',
+      other: 'Altro'
+    },
     regions: {
       andalucia: 'Andalusia',
       aragon: 'Aragona',
@@ -1846,6 +1872,14 @@ const STATUS_ALIASES = {
   Trabajando: 'employed',
   'Autónomo/a': 'self_employed',
   Estudiante: 'student'
+};
+
+const GENDER_ALIASES = {
+  Masculino: 'male',
+  Femenino: 'female',
+  Otros: 'other',
+  Otro: 'other',
+  Otras: 'other'
 };
 
 const REGION_ALIASES = {
@@ -1912,6 +1946,19 @@ function applySelectOptionTranslations() {
         return;
       }
       option.textContent = t(`status.${option.value}`);
+    });
+  });
+
+  ['reg-gender', 'ep-gender'].forEach(selectId => {
+    const select = document.getElementById(selectId);
+    if (!select) return;
+
+    Array.from(select.options).forEach(option => {
+      if (!option.value) {
+        option.textContent = t('common.select');
+        return;
+      }
+      option.textContent = t(`gender.${option.value}`);
     });
   });
 
@@ -1993,15 +2040,14 @@ function applyLoginTranslations() {
   setTextContent(screen.querySelector('.nav-title'), t('login.nav'));
 
   const body = screen.querySelector('#login-form') || screen.querySelector('.scroll > div');
-  if (body?.children?.length >= 8) {
+  if (body?.children?.length >= 7) {
     const hero = body.children[0];
     setTextContent(hero.children[1], t('login.title'));
     setTextContent(hero.children[2], t('login.copy'));
     setTextContent(body.children[1], t('auth.invalid'));
     setTextContent(body.children[4].querySelector('a'), t('login.forgot'));
-    setInnerHtml(body.children[5], t('login.adminHtml'));
-    setTextContent(body.children[6].querySelector('button'), t('login.submit'));
-    setInnerHtml(body.children[7], t('login.signupHtml'));
+    setTextContent(body.children[5].querySelector('button'), t('login.submit'));
+    setInnerHtml(body.children[6], t('login.signupHtml'));
   }
 
   setInputLabel('login-email', 'login.emailLabel');
@@ -2037,16 +2083,18 @@ function applyRegisterTranslations() {
   const body = screen.querySelector('#register-form') || screen.querySelector('.scroll > div');
   if (body?.children?.length >= 13) {
     const hero = body.children[1];
+    const submitBlock = body.lastElementChild;
     setInnerHtml(hero.children[0], t('register.titleHtml'));
     setTextContent(hero.children[1], t('register.copy'));
     setTextContent(hero.children[2].lastChild, t('register.experiment'));
-    setInnerHtml(body.children[12].children[1], t('register.loginHtml'));
-    setTextContent(body.children[12].querySelector('button'), t('register.submit'));
+    setInnerHtml(submitBlock?.children[1], t('register.loginHtml'));
+    setTextContent(submitBlock?.querySelector('button'), t('register.submit'));
   }
 
   setInputLabel('reg-name', 'register.nameLabel');
   setInputLabel('reg-email', 'register.emailLabel');
   setInputLabel('reg-pass', 'register.passwordLabel');
+  setInputLabel('reg-gender', 'register.genderLabel');
   setInputLabel('reg-phone', 'register.phoneLabel');
   setInputLabel('reg-status', 'register.statusLabel');
   setInputLabel('reg-country', 'register.countryLabel');
@@ -2131,6 +2179,7 @@ function applyEditProfileTranslations() {
 
   setInputLabel('ep-name', 'register.nameLabel');
   setInputLabel('ep-age', 'register.ageLabel');
+  setInputLabel('ep-gender', 'register.genderLabel');
   setInputLabel('ep-email', 'login.emailLabel');
   setInputLabel('ep-phone', 'register.phoneLabel');
   setInputLabel('ep-town', 'editProfile.currentTownLabel');
@@ -2378,6 +2427,12 @@ export function normalizeStatusValue(value) {
   return STATUS_ALIASES[value] || '';
 }
 
+export function normalizeGenderValue(value) {
+  if (!value) return '';
+  if (GENDER_VALUES.includes(value)) return value;
+  return GENDER_ALIASES[value] || '';
+}
+
 export function normalizeRegionValue(value) {
   if (!value) return '';
   if (REGION_VALUES.includes(value)) return value;
@@ -2387,6 +2442,11 @@ export function normalizeRegionValue(value) {
 export function translateStatusValue(value) {
   const normalized = normalizeStatusValue(value);
   return normalized ? t(`status.${normalized}`) : String(value || '');
+}
+
+export function translateGenderValue(value) {
+  const normalized = normalizeGenderValue(value);
+  return normalized ? t(`gender.${normalized}`) : String(value || '');
 }
 
 export function translateRegionValue(value) {

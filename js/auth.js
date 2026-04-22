@@ -9,6 +9,7 @@ import { updateHomeProfile } from './profile.js?v=20260417204131';
 import {
   SUPPORTED_LANGUAGES,
   getLanguage,
+  normalizeGenderValue,
   normalizeRegionValue,
   normalizeStatusValue,
   setLanguage,
@@ -282,6 +283,7 @@ export async function doReg() {
   const age = document.getElementById('reg-age')?.value || '';
   const town = document.getElementById('reg-town')?.value || '';
   const phone = document.getElementById('reg-phone')?.value || '';
+  const gender = normalizeGenderValue(document.getElementById('reg-gender')?.value || '');
   const status = normalizeStatusValue(document.getElementById('reg-status')?.value || '');
   const country = document.getElementById('reg-country')?.value || '';
   const region = normalizeRegionValue(document.getElementById('reg-region')?.value || '');
@@ -313,7 +315,7 @@ export async function doReg() {
           region,
           tracking_enabled: trackingEnabled,
           avatar: 'https://i.pravatar.cc/136?img=3',
-          additional_profile: {},
+          additional_profile: { gender },
           privacy_accepted_at: new Date().toISOString()
         }
       }

@@ -8,18 +8,17 @@ import { go } from './nav.js?v=20260417204131';
 import {
   getIntlLocale,
   getLanguage,
+  normalizeGenderValue,
   normalizeRegionValue,
   normalizeStatusValue,
   t,
+  translateGenderValue,
   translateRegionValue,
   translateStatusValue
 } from './i18n.js?v=20260417204131';
 
 const POLICY_SECTION_STYLE = 'background:rgba(116,116,128,0.08);border-radius:16px;padding:16px;';
-const POLICY_TITLE_STYLE = 'font-size:15px;font-weight:700;color:var(--label);letter-spacing:-0.2px;';
 const POLICY_TEXT_STYLE = 'font-size:13px;color:var(--label2);line-height:1.65;margin-top:8px;';
-const POLICY_LIST_STYLE = 'margin:10px 0 0 18px;font-size:13px;color:var(--label2);line-height:1.65;';
-const POLICY_SUBSECTION_STYLE = 'margin-top:12px;padding-top:12px;border-top:0.5px solid var(--sep);';
 const ADDITIONAL_PROFILE_FIELDS = [
   'territorialOrigin',
   'previousProfessionalActivity',
@@ -31,133 +30,14 @@ const ADDITIONAL_PROFILE_FIELDS = [
 const PRIVACY_COPY = {
   es: `
     <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:18px;">
-      <div style="font-size:16px;font-weight:800;letter-spacing:-0.3px;color:var(--ios-blue);">POLÍTICA DE PRIVACIDAD</div>
-
       <section style="${POLICY_SECTION_STYLE}">
-        <div style="${POLICY_TITLE_STYLE}">1. Responsable del tratamiento</div>
-        <div style="${POLICY_TEXT_STYLE}">De conformidad con el artículo 13 del Reglamento General de Protección de Datos (RGPD):</div>
-        <ul style="${POLICY_LIST_STYLE}">
-          <li>Comunidad de Madrid</li>
-          <li>Dirección: [Añadir dirección oficial]</li>
-          <li>Correo electrónico de contacto: [Añadir email de contacto]</li>
-        </ul>
-      </section>
-
-      <section style="${POLICY_SECTION_STYLE}">
-        <div style="${POLICY_TITLE_STYLE}">2. Finalidad del tratamiento</div>
-        <div style="${POLICY_TEXT_STYLE}">En virtud del artículo 5.1.b del RGPD (principio de limitación de la finalidad), los datos personales serán tratados con las siguientes finalidades:</div>
-        <ul style="${POLICY_LIST_STYLE}">
-          <li>Gestionar la creación y mantenimiento de la cuenta de usuario</li>
-          <li>Facilitar el acceso a ofertas de empleo</li>
-          <li>Recomendar municipios y oportunidades en entornos rurales</li>
-          <li>Personalizar la experiencia dentro de la aplicación</li>
-          <li>Mejorar el funcionamiento y rendimiento de la app</li>
-          <li>Garantizar la seguridad del servicio</li>
-        </ul>
-      </section>
-
-      <section style="${POLICY_SECTION_STYLE}">
-        <div style="${POLICY_TITLE_STYLE}">3. Base legal del tratamiento</div>
-        <div style="${POLICY_TEXT_STYLE}">El tratamiento de los datos personales se fundamenta en el artículo 6 del RGPD:</div>
-
-        <div style="${POLICY_SUBSECTION_STYLE}">
-          <div style="${POLICY_TITLE_STYLE}">a) Consentimiento del usuario (artículo 6.1.a RGPD)</div>
-          <div style="${POLICY_TEXT_STYLE}">El usuario otorga su consentimiento expreso para:</div>
-          <ul style="${POLICY_LIST_STYLE}">
-            <li>El uso de la ubicación (GPS)</li>
-            <li>La personalización de contenidos</li>
-            <li>La recomendación de oportunidades laborales y municipios</li>
-          </ul>
-          <div style="${POLICY_TEXT_STYLE}">Según el artículo 7 del RGPD, el consentimiento podrá retirarse en cualquier momento.</div>
-        </div>
-
-        <div style="${POLICY_SUBSECTION_STYLE}">
-          <div style="${POLICY_TITLE_STYLE}">b) Ejecución de un contrato o servicio (artículo 6.1.b RGPD)</div>
-          <div style="${POLICY_TEXT_STYLE}">El tratamiento es necesario para:</div>
-          <ul style="${POLICY_LIST_STYLE}">
-            <li>Crear y gestionar la cuenta del usuario</li>
-            <li>Permitir el acceso a los servicios ofrecidos en la aplicación</li>
-          </ul>
-        </div>
-
-        <div style="${POLICY_SUBSECTION_STYLE}">
-          <div style="${POLICY_TITLE_STYLE}">c) Cumplimiento de obligaciones legales (artículo 6.1.c RGPD)</div>
-          <div style="${POLICY_TEXT_STYLE}">Los datos podrán ser tratados cuando sea necesario para cumplir con obligaciones legales aplicables a la Comunidad de Madrid.</div>
-        </div>
-
-        <div style="${POLICY_SUBSECTION_STYLE}">
-          <div style="${POLICY_TITLE_STYLE}">d) Interés legítimo (artículo 6.1.f RGPD)</div>
-          <div style="${POLICY_TEXT_STYLE}">Se tratarán datos con base en el interés legítimo para:</div>
-          <ul style="${POLICY_LIST_STYLE}">
-            <li>Mejorar la aplicación</li>
-            <li>Garantizar la seguridad del servicio</li>
-          </ul>
-          <div style="${POLICY_TEXT_STYLE}">De acuerdo con el artículo 21 del RGPD, el usuario podrá oponerse a este tratamiento.</div>
-          <div style="${POLICY_TEXT_STYLE}">En ningún caso este tratamiento afectará a los derechos y libertades fundamentales del usuario.</div>
-        </div>
-      </section>
-
-      <section style="${POLICY_SECTION_STYLE}">
-        <div style="${POLICY_TITLE_STYLE}">4. Conservación de los datos</div>
-        <div style="${POLICY_TEXT_STYLE}">En cumplimiento del artículo 5.1.e del RGPD (limitación del plazo de conservación):</div>
-        <ul style="${POLICY_LIST_STYLE}">
-          <li>Los datos se conservarán mientras el usuario mantenga su cuenta activa</li>
-          <li>Durante el tiempo necesario para cumplir obligaciones legales</li>
-          <li>Hasta que el usuario solicite su supresión</li>
-        </ul>
-      </section>
-
-      <section style="${POLICY_SECTION_STYLE}">
-        <div style="${POLICY_TITLE_STYLE}">5. Cesión de datos</div>
-        <div style="${POLICY_TEXT_STYLE}">De acuerdo con el artículo 6 y el artículo 28 del RGPD:</div>
-        <ul style="${POLICY_LIST_STYLE}">
-          <li>No se cederán datos a terceros salvo obligación legal</li>
-          <li>Podrán acceder a los datos proveedores de servicios (encargados del tratamiento), bajo contrato conforme al artículo 28 del RGPD</li>
-          <li>En ningún caso se venderán datos personales</li>
-        </ul>
-      </section>
-
-      <section style="${POLICY_SECTION_STYLE}">
-        <div style="${POLICY_TITLE_STYLE}">6. Derechos del usuario</div>
-        <div style="${POLICY_TEXT_STYLE}">Según los artículos 15 a 22 del RGPD, el usuario tiene derecho a:</div>
-        <ul style="${POLICY_LIST_STYLE}">
-          <li>Acceso (art. 15)</li>
-          <li>Rectificación (art. 16)</li>
-          <li>Supresión (art. 17)</li>
-          <li>Limitación del tratamiento (art. 18)</li>
-          <li>Portabilidad de los datos (art. 20)</li>
-          <li>Oposición (art. 21)</li>
-        </ul>
-        <div style="${POLICY_TEXT_STYLE}">Asimismo, tiene derecho a no ser objeto de decisiones automatizadas (artículo 22).</div>
-        <div style="${POLICY_TEXT_STYLE}">Para ejercer estos derechos:</div>
-        <div style="${POLICY_TEXT_STYLE}">[Añadir correo de contacto]</div>
-        <div style="${POLICY_TEXT_STYLE}">También tiene derecho a presentar reclamación ante la Agencia Española de Protección de Datos.</div>
-      </section>
-
-      <section style="${POLICY_SECTION_STYLE}">
-        <div style="${POLICY_TITLE_STYLE}">7. Seguridad de los datos</div>
-        <div style="${POLICY_TEXT_STYLE}">En cumplimiento del artículo 32 del RGPD, se aplican medidas técnicas y organizativas apropiadas para garantizar la seguridad de los datos personales.</div>
-      </section>
-
-      <section style="${POLICY_SECTION_STYLE}">
-        <div style="${POLICY_TITLE_STYLE}">8. Delegado de Protección de Datos</div>
-        <div style="${POLICY_TEXT_STYLE}">De acuerdo con el artículo 37 del RGPD:</div>
-        <div style="${POLICY_TEXT_STYLE}">[Añadir correo del Delegado de Protección de Datos]</div>
-      </section>
-
-      <section style="${POLICY_SECTION_STYLE}">
-        <div style="${POLICY_TITLE_STYLE}">9. Uso de cookies y tecnologías similares</div>
-        <div style="${POLICY_TEXT_STYLE}">En aplicación de la Ley de Servicios de la Sociedad de la Información:</div>
-        <ul style="${POLICY_LIST_STYLE}">
-          <li>Se podrán utilizar cookies o tecnologías similares</li>
-          <li>Su finalidad será mejorar la experiencia del usuario, analizar el uso y personalizar contenidos</li>
-          <li>El usuario podrá configurarlas o rechazarlas cuando sea posible</li>
-        </ul>
-      </section>
-
-      <section style="${POLICY_SECTION_STYLE}">
-        <div style="${POLICY_TITLE_STYLE}">10. Modificaciones de la política de privacidad</div>
-        <div style="${POLICY_TEXT_STYLE}">La Comunidad de Madrid se reserva el derecho a modificar la presente política para adaptarla a novedades legislativas, conforme al artículo 13 del RGPD.</div>
+        <p style="${POLICY_TEXT_STYLE}margin-top:0;">En cumplimiento de lo dispuesto en la normativa vigente en materia de Protección de Datos de Carácter Personal, se informa a los intervinientes de que los datos personales que figuran en este Convenio y los que se deriven de la relación, serán tratados por ambas partes con la finalidad de gestionar la colaboración establecida, siendo la base para el tratamiento la correcta ejecución del Convenio. Es necesario facilitar dichos datos pues en caso contrario no sería posible gestionar la colaboración existente entre las partes.</p>
+        <p style="${POLICY_TEXT_STYLE}">Los datos no serán cedidos a terceros salvo a las Administraciones Públicas en los casos previstos en la Ley y para los fines en ella definidos.</p>
+        <p style="${POLICY_TEXT_STYLE}">Los interesados podrán ponerse en contacto con el Delegado de Protección de Datos (DPO) de la Universidad Antonio de Nebrija en la siguiente dirección: DPO@nebrija.es</p>
+        <p style="${POLICY_TEXT_STYLE}">Los datos se conservarán mientras se mantenga la colaboración y no se solicite su supresión y en cualquier caso en cumplimiento de plazos legales de prescripción que le resulten de aplicación.</p>
+        <p style="${POLICY_TEXT_STYLE}">Los interesados pueden ejercitar sus derechos de acceso, rectificación, supresión, portabilidad y la limitación u oposición dirigiéndose por escrito a los domicilios correspondientes a ambas partes.</p>
+        <p style="${POLICY_TEXT_STYLE}">Asimismo, los interesados tienen derecho a reclamar ante la Autoridad de Control (Agencia Española de Protección de Datos www.aepd.es).</p>
+        <p style="${POLICY_TEXT_STYLE}">En el supuesto de que, como consecuencia del desarrollo del presente Convenio, sea necesario que las partes se intercambien información personal de los alumnos, cada una de ellas se compromete a dar entero cumplimiento a las obligaciones en materia de protección de datos recogidas en el Reglamento del Parlamento Europeo y del Consejo relativo a la protección de las personas físicas en lo que respecta al tratamiento de datos personales y a la libre circulación de estos datos y por el que se deroga la Directiva 95/46/CE (RGPD). En concreto, las partes se obligan a informar a los afectados sobre el tratamiento de sus datos personales conforme a lo estipulado en el artículo 13 del RGPD y de la cesión de los mismos, debiendo recabar su consentimiento, en el supuesto de que se requiera contar con el mismo.</p>
       </section>
     </div>
   `
@@ -179,6 +59,7 @@ function getAdditionalProfile(session) {
 
 function getAdditionalProfileDraft() {
   return {
+    gender: normalizeGenderValue(document.getElementById('ep-gender')?.value || ''),
     territorialOrigin: readInputValue('ep-territorial-origin'),
     previousProfessionalActivity: readInputValue('ep-previous-professional-activity'),
     spatialProfessionalTrajectory: readInputValue('ep-spatial-professional-trajectory'),
@@ -274,11 +155,11 @@ export function updateHomeProfile() {
   if (nameEl) nameEl.textContent = session.name || t('profile.guest');
 
   if (metaEl) {
-    const age = session.age ? `${session.age} · ` : '';
+    const gender = translateGenderValue(session.additionalProfile?.gender || '');
     const status = session.role === 'admin'
       ? t('profile.adminStatus')
       : translateStatusValue(session.status) || t('profile.defaultStatus');
-    metaEl.textContent = age + status;
+    metaEl.textContent = [session.age, gender, status].filter(Boolean).join(' · ');
   }
 
   if (avatarEl && session.avatar) avatarEl.src = session.avatar;
@@ -297,6 +178,7 @@ export function openEditProfile() {
 
   setValue('ep-name', session.name);
   setValue('ep-age', session.age);
+  setSelect('ep-gender', normalizeGenderValue(additionalProfile.gender));
   setValue('ep-email', session.email);
   setValue('ep-phone', session.phone);
   setValue('ep-town', session.town);
@@ -450,14 +332,16 @@ export function initProfile() {
     const session = DB.getSession();
     const regionValue = translateRegionValue(session?.region || '');
     const statusValue = translateStatusValue(session?.status || '');
+    const genderValue = translateGenderValue(session?.additionalProfile?.gender || '');
     const townInput = document.getElementById('ep-town');
 
     if (document.getElementById('s-editprofile')?.classList.contains('active')) {
       if (townInput && !townInput.value && session?.town) townInput.value = session.town;
+      if (session?.additionalProfile?.gender) setSelect('ep-gender', normalizeGenderValue(session.additionalProfile.gender));
       if (session?.region) setSelect('ep-region', normalizeRegionValue(session.region));
       if (session?.status) setSelect('ep-status', normalizeStatusValue(session.status));
       syncAdditionalProfileBanner(session, getAdditionalProfileDraft());
-      if (!regionValue && !statusValue) return;
+      if (!regionValue && !statusValue && !genderValue) return;
     }
   });
 }

@@ -27,7 +27,7 @@ async function ensureMunicipalitiesLoaded() {
   if (municipalities.length) return municipalities;
   if (municipalitiesPromise) return municipalitiesPromise;
 
-  municipalitiesPromise = import('../data/municipios-spain-slim.js?v=20260417204131')
+  municipalitiesPromise = import('../data/municipios-spain-slim.js?v=202604221247')
     .then(module => {
       municipalities = (module.MUNICIPALITIES || []).filter(item => (
         Number.isFinite(item?.lat) && Number.isFinite(item?.lon)

@@ -13,19 +13,21 @@ Este directorio deja la base lista para sacar la app de `localStorage` y pasarla
 El esquema deja un único administrador posible:
 
 - Email admin fijo: `admin@arraigo.local`
+- Contraseña admin definida para pruebas: `ArraigoAdmin2026!`
 - Todos los demás usuarios se crean automáticamente con rol `user`
 
 Pasos:
 
 1. Ejecuta completo [schema.sql](./schema.sql).
-2. Registra en la app la cuenta `admin@arraigo.local`.
-3. Esa cuenta quedará como `admin` automáticamente.
+2. Ejecuta [create-default-admin.sql](./create-default-admin.sql) para crear o actualizar el administrador con la contraseña definida.
+3. Entra en la app con `admin@arraigo.local` y `ArraigoAdmin2026!`.
 4. El resto de cuentas quedarán como `user`.
 
 Nota:
 
-- La contraseña del admin no se guarda en el frontend ni en este repo.
-- Defínela al crear la cuenta `admin@arraigo.local` o cámbiala luego desde `Auth > Users` en Supabase.
+- La contraseña del admin no se guarda en el frontend.
+- Si Supabase bloquea escrituras directas sobre `auth.users`, crea o actualiza manualmente el usuario desde `Auth > Users` con las mismas credenciales. El rol `admin` se asignará por el email.
+- Cambia esta contraseña antes de publicar la app.
 
 ## 3. Qué guarda cada tabla
 

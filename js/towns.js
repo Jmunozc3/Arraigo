@@ -258,7 +258,7 @@ async function ensureTownsLoaded() {
   setTownStatus(t('towns.loading'));
 
   townsPromise = Promise.all([
-    import('../data/municipios-spain-slim.js?v=20260417204131'),
+    import('../data/municipios-spain-slim.js?v=202604221247'),
     import('../data/municipios-population-2025.js?v=20260417204131'),
     import('../data/municipios-enrichment.js?v=20260417204131')
   ])
